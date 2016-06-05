@@ -1,7 +1,7 @@
 #pragma once
 #include <winsock2.h>
 
-class TCPStream_;
+class TCPStream;
 
 class TCPClient
 {
@@ -12,6 +12,6 @@ public:
 	TCPClient() = delete;
 	~TCPClient() = delete;
 
-	static TCPStream_ ConnectToServer(char * ip, char * port);
+	static TCPStream ConnectToServer(char * ip, char * port);
 };
 

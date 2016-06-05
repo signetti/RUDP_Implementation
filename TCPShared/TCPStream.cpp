@@ -1,10 +1,10 @@
 #include "stdafx.h"
 
-TCPStream_::TCPStream_(SOCKET socket) : mSocket(socket) {}
+TCPStream::TCPStream(SOCKET socket) : mSocket(socket) {}
 
-TCPStream_::TCPStream_(const TCPStream_ & other) : mSocket(other.mSocket) {}
+TCPStream::TCPStream(const TCPStream & other) : mSocket(other.mSocket) {}
 
-TCPStream_ & TCPStream_::operator=(const TCPStream_ & rhs)
+TCPStream & TCPStream::operator=(const TCPStream & rhs)
 {
 	if (this != &rhs)
 	{
@@ -13,9 +13,9 @@ TCPStream_ & TCPStream_::operator=(const TCPStream_ & rhs)
 	return *this;
 }
 
-TCPStream_::TCPStream_(TCPStream_ && other) : mSocket(std::move(other.mSocket)) {}
+TCPStream::TCPStream(TCPStream && other) : mSocket(std::move(other.mSocket)) {}
 
-TCPStream_ & TCPStream_::operator=(TCPStream_ && rhs)
+TCPStream & TCPStream::operator=(TCPStream && rhs)
 {
 	if (this != &rhs)
 	{
@@ -25,12 +25,12 @@ TCPStream_ & TCPStream_::operator=(TCPStream_ && rhs)
 	return *this;
 }
 
-TCPStream_::~TCPStream_()
+TCPStream::~TCPStream()
 {
 	Close();
 }
 
-int TCPStream_::Write(const char * data, int sizeOfData)
+int TCPStream::Write(const char * data, int sizeOfData)
 {
 	int result;
 
@@ -45,18 +45,18 @@ int TCPStream_::Write(const char * data, int sizeOfData)
 	return result;
 }
 
-int TCPStream_::Write(const char * message)
+int TCPStream::Write(const char * message)
 {
 	return Write(message, (int)strlen(message) + 1);
 }
 
-int TCPStream_::Write(const std::string& message)
+int TCPStream::Write(const std::string& message)
 {
 	return Write(message.c_str(), static_cast<int>(message.length()) + 1);
 }
 
 
-int TCPStream_::Read(char * OutBuffer, int sizeOfBuffer)
+int TCPStream::Read(char * OutBuffer, int sizeOfBuffer)
 {
 	int result;
 
@@ -69,7 +69,7 @@ int TCPStream_::Read(char * OutBuffer, int sizeOfBuffer)
 	return result;
 }
 
-bool TCPStream_::Shutdown(int how)
+bool TCPStream::Shutdown(int how)
 {
 	int result;
 
@@ -83,7 +83,7 @@ bool TCPStream_::Shutdown(int how)
 	else return true;
 }
 
-void TCPStream_::Close()
+void TCPStream::Close()
 {
 	// Close Socket
 	if (mSocket != INVALID_SOCKET)
@@ -92,7 +92,7 @@ void TCPStream_::Close()
 	}
 }
 
-bool TCPStream_::IsOpen()
+bool TCPStream::IsOpen()
 {
 	return (mSocket != INVALID_SOCKET);
 }

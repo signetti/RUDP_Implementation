@@ -112,7 +112,7 @@ bool TCPServer::Listen()
 	else return true;
 }
 
-TCPStream_ TCPServer::Accept()
+TCPStream TCPServer::Accept()
 {
 	// Accept a client socket
 	SOCKET clientSocket = accept(mListenSocket, NULL, NULL);
@@ -124,7 +124,7 @@ TCPStream_ TCPServer::Accept()
 	}
 
 	// Create client and store it into vector-list
-	TCPStream_ * newClientStream = new TCPStream_(clientSocket);
+	TCPStream * newClientStream = new TCPStream(clientSocket);
 	mClients.push_back(newClientStream);
 
 	// Return the new client

@@ -63,8 +63,8 @@ SOCKET TCPClient::InitializeClient(char * ip, char * port)
 	return serverSocket;
 }
 
-TCPStream_ TCPClient::ConnectToServer(char * ip, char * port)
+TCPStream TCPClient::ConnectToServer(char * ip, char * port)
 {
 	WSAManager::StartUp();
-	return TCPStream_(InitializeClient(ip, port));
+	return TCPStream(InitializeClient(ip, port));
 }

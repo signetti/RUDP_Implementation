@@ -3,14 +3,14 @@
 #include <vector>
 #include <string>
 
-class TCPStream_;
+class TCPStream;
 
 class TCPServer
 {
 private:
 	SOCKET mListenSocket;
 	struct addrinfo * mInfo;
-	std::vector<TCPStream_ *> mClients;
+	std::vector<TCPStream *> mClients;
 	std::string mPort;
 
 public:
@@ -25,7 +25,7 @@ public:
 
 	bool Listen();
 
-	TCPStream_ Accept();
+	TCPStream Accept();
 
 	void Close();
 };

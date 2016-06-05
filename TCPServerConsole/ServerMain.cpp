@@ -1,7 +1,9 @@
 #include "stdafx.h"
-
-#define DEFAULT_BUFLEN 512
-#define DEFAULT_PORT "27015"
+#include "SharedTestData.h"
+#include "StopWatch.h"
+#include <sstream>
+#include <iostream>
+#include <fstream>
 
 int BP(int condition)
 {
@@ -10,51 +12,133 @@ int BP(int condition)
 
 int __cdecl main()
 {
-	char recvbuf[DEFAULT_BUFLEN];
-	int recvbuflen = DEFAULT_BUFLEN;
-
+	// ============== Initialize Server Connection ==============
 	bool success;
 
 	// Create a server that is listening to the defined-port
 	TCPServer server(DEFAULT_PORT);
 
-	success = server.CreateSocket();
+	// Open the server for connection (create socket, bind, then listen)
+	success = server.Open();
 	if (!success) return BP(1);
 
-	// Bind Listening Socket to port
-	success = server.Bind();
-	if (!success) return BP(1);
+	// Listen for and accept a client connection
+	printf("Awaiting Client. . . ");
+	TCPStream client = server.Accept();
 
-	// Listen in on port
-	success = server.Listen();
-	if (!success) return BP(1);
+	// Notify that connection is reached
+	printf("Client-Server Connection Established.");
 
-	// Listen for and accept a client socket
-	TCPStream_ client = server.Accept();
 
-	// Receive until the peer shuts down the connection
+	// ============= Assert Proper Test Conditions =============
+	char recvbuf[DEFAULT_BUFLEN];
+	int recvbuflen = DEFAULT_BUFLEN;
+
 	int bytesReceived;
-	int bytesSent;
+
+	bool isDataValid;
+
 	do
 	{
-		bytesReceived = client.Read(recvbuf, recvbuflen);
-		if (bytesReceived > 0)
-		{
-			printf("Bytes received: %d\n %s\n", bytesReceived, recvbuf);
+		// Send this application's Test Message to Client
+		client.Write(TEST_MESSAGE.c_str());
 
-			// Echo the buffer back to the sender
-			bytesSent = client.Write(recvbuf);
-			printf("Bytes sent: %d\n", bytesSent);
+		// Get client's Test Message
+		bytesReceived = client.Read(recvbuf, recvbuflen);
+
+		// Assert that the client is still connected
+		if (bytesReceived <= 0)
+		{
+			printf("\nClient disconnected. Ending Test.");
+			return BP(1);
 		}
-		else if (bytesReceived == 0)
-			printf("Connection closed\n");
+		else if (bytesReceived < 8)
+		{
+			// Client sent bad comparison
+			printf("\nERROR: Different test messages were detected from the client. This could cause problems during testing.\
+					\nPress \'y\' to continue, or press any other key to try again.");
+		}
 		else
 		{
-			printf("recv failed with error: %d\n", WSAGetLastError());
+			// Check Validity of Data received
+			isDataValid = static_cast<int>(TEST_MESSAGE.length() + 1) == bytesReceived;
+			isDataValid = isDataValid && (TEST_MESSAGE.compare(recvbuf) == 0);
+
+			if (isDataValid) break;
+			else
+				printf("\nERROR: Different test messages were detected. This could cause problems during testing.\
+						\nPress \'y\' to continue, or press any other key to try again.");
+		}
+	} while(getchar() != 'y');
+
+	// Send again to let client know to continue
+	client.Write("yay!");
+
+
+	// =============== Begin Testing Connection ===============
+
+	TimeRecorder<std::chrono::microseconds> record;
+	int testNumber;
+
+	std::ofstream logFile;
+	logFile.open("test_results.csv");
+	logFile << "Test Number, Bytes Received, Receive Time (탎), Send Time (탎), Error (1=error)";
+
+	// Receive until the peer shuts down the connection
+	for (testNumber = 1; bytesReceived > 0 && testNumber <= NUM_OF_TEST_RUNS; ++testNumber)
+	{
+		// Time the receiving of the message from client
+		{
+			StopWatch<std::chrono::microseconds> time(record);
+			bytesReceived = client.Read(recvbuf, recvbuflen);
+		}
+
+		// Time the echo of the message from server
+		if (bytesReceived > 0)
+		{
+			StopWatch<std::chrono::microseconds> time(record);
+			client.Write(recvbuf);
+		}
+
+		// Check Validity of Data received
+		isDataValid = static_cast<int>(TEST_MESSAGE.length()+1) == bytesReceived;
+		isDataValid = isDataValid && (TEST_MESSAGE.compare(recvbuf) == 0);
+
+		// Test Complete. Store / Print Results
+		std::stringstream results;
+		std::vector<std::chrono::microseconds> times = record.GetTimeRecordings(true);
+
+		if (bytesReceived > 0)
+		{
+			// Print to Log File
+			logFile << '\n' << testNumber << ',' << bytesReceived << ',' << times[0].count() << ',' << times[1].count() << ',' << ((isDataValid) ? 0 : 1);
+			
+			results << "\nReply from client: bytes="	<< bytesReceived
+					<< " recv_time="				<< times[0].count()
+					<< " send_time="				<< times[1].count()
+					<< "us error="					<< ((isDataValid) ? "true" : "false");
+			printf(results.str().c_str());
+		}
+		else if (bytesReceived == 0)
+			printf("\nConnection closed");
+		else
+		{
+			printf("\nrecv failed with error: %d", WSAGetLastError());
 			client.Close();
 			return BP(1);
 		}
-	} while (bytesReceived > 0);
+	}
+
+	// Close File with Calculated Results
+	logFile << "\n\n,,Avg Receive Time (탎), Avg Send Time (탎),Percent of Error\n,"
+			<< ",=SUM(C2:C" << (NUM_OF_TEST_RUNS + 1) << ")/" << NUM_OF_TEST_RUNS
+			<< ",=SUM(D2:D" << (NUM_OF_TEST_RUNS + 1) << ")/" << NUM_OF_TEST_RUNS
+			<< ",=SUM(E2:E" << (NUM_OF_TEST_RUNS + 1) << ")/" << NUM_OF_TEST_RUNS;
+	logFile.close();
+
+
+	// ================= End Test On Server-Side ===============
+	printf("\nTest Complete.");
 
 	// Shutdown the connection since we're done
 	success = client.Shutdown(SD_SEND);
