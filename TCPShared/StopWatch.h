@@ -40,6 +40,11 @@ public:
 	{
 		return mLapTimeElapsed.back();
 	}
+
+	std::uint32_t Size()
+	{
+		return static_cast<std::uint32_t>(mLapTimeElapsed.size());
+	}
 };
 
 /*	StopWatch

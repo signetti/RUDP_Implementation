@@ -5,6 +5,8 @@
 #include <iostream>
 #include <fstream>
 
+#include <assert.h>
+
 int BP(int condition)
 {
 	return condition;
@@ -61,8 +63,7 @@ int __cdecl main()
 		else
 		{
 			// Check Validity of Data received
-			isDataValid = static_cast<int>(TEST_MESSAGE.length() + 1) == bytesReceived;
-			isDataValid = isDataValid && (TEST_MESSAGE.compare(recvbuf) == 0);
+			isDataValid = ValidateMessageReceived(recvbuf, bytesReceived);
 
 			if (isDataValid) break;
 			else
@@ -81,6 +82,8 @@ int __cdecl main()
 	int testNumber;
 
 	std::ofstream logFile;
+
+	// Initialize Log File Data
 	logFile.open("test_results.csv");
 	logFile << "Test Number, Bytes Received, Receive Time (µs), Send Time (µs), Error (1=error)";
 
@@ -93,7 +96,7 @@ int __cdecl main()
 			bytesReceived = client.Read(recvbuf, recvbuflen);
 		}
 
-		// Time the echo of the message from server
+		// Time the echo of the message to the client
 		if (bytesReceived > 0)
 		{
 			StopWatch<std::chrono::microseconds> time(record);
@@ -101,26 +104,29 @@ int __cdecl main()
 		}
 
 		// Check Validity of Data received
-		isDataValid = static_cast<int>(TEST_MESSAGE.length()+1) == bytesReceived;
-		isDataValid = isDataValid && (TEST_MESSAGE.compare(recvbuf) == 0);
+		isDataValid = ValidateMessageReceived(recvbuf, bytesReceived);
 
-		// Test Complete. Store / Print Results
-		std::stringstream results;
-		std::vector<std::chrono::microseconds> times = record.GetTimeRecordings(true);
-
+		// Test Complete, Store / Print Results
 		if (bytesReceived > 0)
 		{
+			std::stringstream results;
+			std::vector<std::chrono::microseconds> times = record.GetTimeRecordings(true);
+			assert(record.Size() == 0);
+
 			// Print to Log File
 			logFile << '\n' << testNumber << ',' << bytesReceived << ',' << times[0].count() << ',' << times[1].count() << ',' << ((isDataValid) ? 0 : 1);
 			
-			results << "\nReply from client: bytes="	<< bytesReceived
-					<< " recv_time="				<< times[0].count()
-					<< " send_time="				<< times[1].count()
-					<< "us error="					<< ((isDataValid) ? "true" : "false");
+			// Print to Console
+			results << "\nReply from client: bytes=" << bytesReceived
+					<< " recv_time="				 << times[0].count()
+					<< "us send_time="				 << times[1].count()
+					<< "us error="					 << ((!isDataValid) ? "true" : "false");
 			printf(results.str().c_str());
 		}
 		else if (bytesReceived == 0)
+		{
 			printf("\nConnection closed");
+		}
 		else
 		{
 			printf("\nrecv failed with error: %d", WSAGetLastError());

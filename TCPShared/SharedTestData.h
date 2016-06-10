@@ -7,6 +7,18 @@ static const std::string TEST_MESSAGE = "\
 ===============================================================|\
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~|\
 ---------------------------------------------------------------";
+
+// Validates the test message received with the test message in the system
+bool ValidateMessageReceived(char * message, int size)
+{
+	bool isDataValid;
+
+	// Check Validity of Data received
+	isDataValid = static_cast<int>(TEST_MESSAGE.length() + 1) == size;
+	isDataValid = isDataValid && (TEST_MESSAGE.compare(message) == 0);
+	return isDataValid;
+}
+
 /*
 // Check Sums
 std::int32_t GetCheckSum(const std::string& message)

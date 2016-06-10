@@ -1,9 +1,11 @@
 #include "stdafx.h"
 #include "SharedTestData.h"
-//#define DEFAULT_BUFLEN	512
-//#define DEFAULT_PORT	"27015"
-//#define DEFAULT_IP		"10.8.3.35"
+#include "StopWatch.h"
+#include <sstream>
+#include <iostream>
+#include <fstream>
 
+#include <assert.h>
 int BP(int condition)
 {
 	return condition;
@@ -31,8 +33,7 @@ int __cdecl main()
 	do
 	{
 		// Check Validity of Test Message received
-		isDataValid = static_cast<int>(TEST_MESSAGE.length()+1) == bytesReceived;
-		isDataValid = isDataValid && (TEST_MESSAGE.compare(recvbuf) == 0);
+		isDataValid = ValidateMessageReceived(recvbuf, bytesReceived);
 
 		if (isDataValid)
 		{
@@ -63,27 +64,77 @@ int __cdecl main()
 			printf("Server disconnected. Ending Test.");
 			return BP(1);
 		}
+
 	} while (!isDataValid);
 
 
 	// =============== Begin Testing Connection ===============
+	TimeRecorder<std::chrono::microseconds> record;
 	int testNumber;
+
+	std::ofstream logFile;
+
+	// Initialize Log File Data
+	logFile.open("test_results.csv");
+	logFile << "Test Number, Bytes Received, Receive Time (탎), Send Time (탎), Error (1=error)";
 
 	// Receive until the peer shuts down the connection
 	for (testNumber = 1; bytesReceived > 0 && testNumber <= NUM_OF_TEST_RUNS; ++testNumber)
 	{
-		// Send Test Message to Server
-		server.Write(TEST_MESSAGE.c_str());
+		// Time the sending of the message to the server
+		{
+			StopWatch<std::chrono::microseconds> time(record);
+			server.Write(TEST_MESSAGE.c_str());
+		}
 
-		// Receive Test Message from Server
-		bytesReceived = server.Read(recvbuf, recvbuflen);
+		// Time the echo of the message from the server
+		if (bytesReceived > 0)
+		{
+			StopWatch<std::chrono::microseconds> time(record);
+			bytesReceived = server.Read(recvbuf, recvbuflen);
+		}
 
 		if (bytesReceived <= 0)
 		{
 			printf("Server disconnected mid-test? Ending Test.");
 			return BP(1);
 		}
+
+		// Check Validity of Data received
+		isDataValid = ValidateMessageReceived(recvbuf, bytesReceived);
+
+		// Test Complete, Store / Print Results
+		if (bytesReceived > 0)
+		{
+			std::stringstream results;
+			std::vector<std::chrono::microseconds> times = record.GetTimeRecordings(true);
+			assert(record.Size() == 0);
+
+			// Print to Log File
+			logFile << '\n' << testNumber << ',' << bytesReceived << ',' << times[0].count() << ',' << times[1].count() << ',' << ((isDataValid) ? 0 : 1);
+
+			results << "\nReply from server: bytes=" << bytesReceived
+				<< " recv_time="					 << times[0].count()
+				<< "us send_time="					 << times[1].count()
+				<< "us error="						 << ((!isDataValid) ? "true" : "false");
+			printf(results.str().c_str());
+		}
+		else if (bytesReceived == 0)
+			printf("\nConnection closed");
+		else
+		{
+			printf("\nrecv failed with error: %d", WSAGetLastError());
+			server.Close();
+			return BP(1);
+		}
 	}
+
+	// Close File with Calculated Results
+	logFile << "\n\n,,Avg Receive Time (탎), Avg Send Time (탎),Percent of Error\n,"
+		<< ",=SUM(C2:C" << (NUM_OF_TEST_RUNS + 1) << ")/" << NUM_OF_TEST_RUNS
+		<< ",=SUM(D2:D" << (NUM_OF_TEST_RUNS + 1) << ")/" << NUM_OF_TEST_RUNS
+		<< ",=SUM(E2:E" << (NUM_OF_TEST_RUNS + 1) << ")/" << NUM_OF_TEST_RUNS;
+	logFile.close();
 
 	// ================= End Test On Client-Side ===============
 	printf("\nTest Complete.");
