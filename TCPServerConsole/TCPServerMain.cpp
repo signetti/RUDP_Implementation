@@ -43,10 +43,10 @@ int __cdecl main()
 	do
 	{
 		// Send this application's Test Message to Client
-		client.Write(TEST_MESSAGE.c_str());
+		client.Send(TEST_MESSAGE.c_str());
 
 		// Get client's Test Message
-		bytesReceived = client.Read(recvbuf, recvbuflen);
+		bytesReceived = client.Receive(recvbuf, recvbuflen);
 
 		// Assert that the client is still connected
 		if (bytesReceived <= 0)
@@ -73,7 +73,7 @@ int __cdecl main()
 	} while(getchar() != 'y');
 
 	// Send again to let client know to continue
-	client.Write("yay!");
+	client.Send("yay!");
 
 
 	// =============== Begin Testing Connection ===============
@@ -93,14 +93,14 @@ int __cdecl main()
 		// Time the receiving of the message from client
 		{
 			StopWatch<std::chrono::microseconds> time(record);
-			bytesReceived = client.Read(recvbuf, recvbuflen);
+			bytesReceived = client.Receive(recvbuf, recvbuflen);
 		}
 
 		// Time the echo of the message to the client
 		if (bytesReceived > 0)
 		{
 			StopWatch<std::chrono::microseconds> time(record);
-			client.Write(recvbuf);
+			client.Send(recvbuf);
 		}
 
 		// Check Validity of Data received
@@ -114,7 +114,9 @@ int __cdecl main()
 			assert(record.Size() == 0);
 
 			// Print to Log File
-			logFile << '\n' << testNumber << ',' << bytesReceived << ',' << times[0].count() << ',' << times[1].count() << ',' << ((isDataValid) ? 0 : 1);
+			logFile << '\n' << testNumber << ',' << bytesReceived << ','
+					<< times[0].count() << ',' << times[1].count() << ','
+					<< ((isDataValid) ? 0 : 1);
 			
 			// Print to Console
 			results << "\nReply from client: bytes=" << bytesReceived

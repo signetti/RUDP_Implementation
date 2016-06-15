@@ -28,7 +28,7 @@ int __cdecl main()
 	bool isDataValid;
 	
 	// Get Server's Test message (at least once)
-	bytesReceived = server.Read(recvbuf, recvbuflen);
+	bytesReceived = server.Receive(recvbuf, recvbuflen);
 	
 	do
 	{
@@ -39,10 +39,10 @@ int __cdecl main()
 		{
 			// Server's Test Message is Valid!
 			// Send this application's Test Message to Server
-			server.Write(TEST_MESSAGE.c_str());
+			server.Send(TEST_MESSAGE.c_str());
 
 			// Get response from Server
-			bytesReceived = server.Read(recvbuf, recvbuflen);
+			bytesReceived = server.Receive(recvbuf, recvbuflen);
 
 			// If bytes received is a large number, then it's a test message.
 			// Else server responded successful matching Test Message
@@ -52,10 +52,10 @@ int __cdecl main()
 		{
 			// Server's Test Message is invalid
 			// Send bad data to Server
-			server.Write("boo!");
+			server.Send("boo!");
 
 			// Get Test message again from the Server
-			bytesReceived = server.Read(recvbuf, recvbuflen);
+			bytesReceived = server.Receive(recvbuf, recvbuflen);
 		}
 
 		// Assert that the server is still connected
@@ -84,14 +84,14 @@ int __cdecl main()
 		// Time the sending of the message to the server
 		{
 			StopWatch<std::chrono::microseconds> time(record);
-			server.Write(TEST_MESSAGE.c_str());
+			server.Send(TEST_MESSAGE.c_str());
 		}
 
 		// Time the echo of the message from the server
 		if (bytesReceived > 0)
 		{
 			StopWatch<std::chrono::microseconds> time(record);
-			bytesReceived = server.Read(recvbuf, recvbuflen);
+			bytesReceived = server.Receive(recvbuf, recvbuflen);
 		}
 
 		if (bytesReceived <= 0)

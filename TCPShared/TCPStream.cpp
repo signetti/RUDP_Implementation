@@ -30,7 +30,7 @@ TCPStream::~TCPStream()
 	Close();
 }
 
-int TCPStream::Write(const char * data, int sizeOfData)
+int TCPStream::Send(const char * data, int sizeOfData)
 {
 	int result;
 
@@ -45,18 +45,18 @@ int TCPStream::Write(const char * data, int sizeOfData)
 	return result;
 }
 
-int TCPStream::Write(const char * message)
+int TCPStream::Send(const char * message)
 {
-	return Write(message, (int)strlen(message) + 1);
+	return Send(message, (int)strlen(message) + 1);
 }
 
-int TCPStream::Write(const std::string& message)
+int TCPStream::Send(const std::string& message)
 {
-	return Write(message.c_str(), static_cast<int>(message.length()) + 1);
+	return Send(message.c_str(), static_cast<int>(message.length()) + 1);
 }
 
 
-int TCPStream::Read(char * OutBuffer, int sizeOfBuffer)
+int TCPStream::Receive(char * OutBuffer, int sizeOfBuffer)
 {
 	int result;
 
