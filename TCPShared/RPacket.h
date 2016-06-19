@@ -13,12 +13,15 @@ private:
 	std::vector<uint8_t> mBuffer;
 
 	static std::vector<uint8_t> CopyBytes(flatbuffers::Vector<uint8_t> buffer);
-	static std::vector<uint8_t> CopyBytes(uint8_t * buffer, std::uint32_t size);
+	static std::vector<uint8_t> CopyBytes(const uint8_t * buffer, std::uint32_t size);
+
+	static std::vector<uint8_t> SerializeInstance(std::uint32_t id, std::uint32_t seq, std::uint32_t ack, std::uint32_t ack_bitfield, std::vector<uint8_t> buffer);
 
 	RPacket(const Packet * packet);
 public:
 	static const std::uint32_t RUDP_ID = 0xABCD;
 
+	RPacket();
 	RPacket(std::uint32_t seq, std::uint32_t ack, std::uint32_t ack_bitfield, std::vector<uint8_t> buffer);
 	RPacket(std::uint32_t seq, std::uint32_t ack, std::uint32_t ack_bitfield, std::string message);
 	~RPacket();
@@ -31,12 +34,19 @@ public:
 	std::uint32_t AckBitfield();
 	std::vector<uint8_t> Buffer();
 	std::string Message();
-	std::vector<uint8_t> Serialize();
 
 	// Become Bad Packet (testing)
 	void BecomeBadPacket();
 
-	static RPacket * Deserialize(std::vector<uint8_t> byte_buffer);
-	static RPacket * Deserialize(uint8_t * buffer, uint32_t buffer_size);
+	// Serialize Data
+	std::vector<uint8_t> Serialize();
+
+	// Deserialize Data
+	bool Deserialize(std::vector<uint8_t> byte_buffer);
+	bool Deserialize(uint8_t * buffer);
+
+	static std::vector<uint8_t> SerializeInstance(std::uint32_t seq, std::uint32_t ack, std::uint32_t ack_bitfield, std::vector<uint8_t> buffer);
+	static RPacket * DeserializeInstance(std::vector<uint8_t> byte_buffer);
+	static RPacket * DeserializeInstance(uint8_t * buffer);
 };
 

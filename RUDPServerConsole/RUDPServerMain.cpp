@@ -11,6 +11,8 @@
 #include <ws2tcpip.h>
 
 #include "RPacket.h"
+#include "RUDPStream.h"
+#include "RUDPServer.h"
 
 #include <assert.h>
 int BP(int condition)
@@ -18,8 +20,27 @@ int BP(int condition)
 	return condition;
 }
 
+
+
+int GetError3(SOCKET sock)
+{
+	int error = 0;
+	socklen_t len = sizeof(error);
+	int retval = getsockopt(sock, SOL_SOCKET, SO_ERROR, reinterpret_cast<char*>(&error), &len);
+
+	if (retval != 0)
+	{
+		/* there was a problem getting the error code */
+		printf("Error getting socket, error code: %d\n", WSAGetLastError());
+	}
+	return retval;
+}
+
 int __cdecl main()
 {
+	// Re-seed
+	srand(static_cast<unsigned int>(time(0)));
+	/*
 	WSAManager::StartUp();
 
 	// Create Socket
@@ -60,6 +81,39 @@ int __cdecl main()
 	}
 	freeaddrinfo(info);
 
+	// Create RUDPStream
+	RUDPStream client(sock);
+	*/
+
+	// ============== Initialize Server Connection ==============
+	bool success;
+
+	// Create a server that is listening to the defined-port
+	RUDPServer server(DEFAULT_PORT, 1000);
+
+	// Open the server for connection (create socket, bind, then listen)
+	printf("Awaiting Client. . . \n");
+	success = server.Open();
+	if (!success) return BP(1);
+
+	// Listen for and accept a client connection
+	printf("Retrieving Client. . . \n");
+	RUDPStream& client = *server.Accept();
+
+	GetError3(client.mSocket);
+
+	if (client.IsOpen() == false)
+	{
+		printf("Failed to create client connection.");
+		return BP(0);
+	}
+
+	GetError3(client.mSocket);
+
+	// Notify that connection is reached
+	printf("Client-Server Connection Established.\n");
+
+
 	// Create Protocol ID
 	char recvbuf[DEFAULT_BUFLEN];
 
@@ -67,42 +121,59 @@ int __cdecl main()
 	int bytesReceived;
 	//int bytesSent;
 
-	struct sockaddr client_addr;
-	int client_addr_len = sizeof(struct sockaddr_in);
-	//char * message;
-
+	//struct sockaddr client_addr;
+	RPacket data;
+	printf("waiting on port %s\n", DEFAULT_PORT);
 	for (;;)
 	{
-		printf("waiting on port %s\n", DEFAULT_PORT);
-		bytesReceived = recvfrom(sock, recvbuf, DEFAULT_BUFLEN, 0, &client_addr, &client_addr_len);
-		if (bytesReceived > 0)
+		// Sending Packets
 		{
-			// Convert bytes to RUDP packet information
-			RPacket * data = RPacket::Deserialize(reinterpret_cast<uint8_t *>(recvbuf), DEFAULT_BUFLEN);
-			assert(data != nullptr);
-
-			if (data->IsBadPacket())
+			GetError3(client.mSocket);
+			bytesReceived = client.Receive(recvbuf, DEFAULT_BUFLEN);
+			if (bytesReceived <= 0)
 			{
-				printf("message from protocol: 0x%X\n", data->Id());
+				continue;
+			}
+
+			// Convert bytes to RUDP packet information
+			bool isSuccess = data.Deserialize(reinterpret_cast<uint8_t *>(recvbuf));
+
+			if (!isSuccess)
+			{
+				printf("message: Not an RUDP packet\n");
 			}
 			else
 			{
 				printf("message [%d bytes]:\t(seq:%d ack:%d ack_bit:%d)\t%s\n"
-					, bytesReceived, data->Sequence(), data->Ack(), data->AckBitfield(), data->Message().c_str());
+					, bytesReceived, data.Sequence(), data.Ack(), data.AckBitfield(), data.Message().c_str());
 			}
 
-			/*
-			// Send Acknowledgement
-			bytesSent = sendto(sock, recvbuf, (int)strlen(recvbuf) + 1, 0, &client_addr, client_addr_len);
-			if (bytesSent < 0)
-			{
-				printf("Failed to send acknowledgement");
-				return BP(1);
-			}*/
+			printf("waiting on port %s\n", DEFAULT_PORT);
 		}
-		else
+		/*
+		// Receiving Packets
 		{
-			printf("received bytes is %d?", bytesReceived);
-		}
+			GetError3(client.mSocket);
+			bytesReceived = client.Receive(recvbuf, DEFAULT_BUFLEN);
+			if (bytesReceived <= 0)
+			{
+				continue;
+			}
+
+			// Convert bytes to RUDP packet information
+			bool isSuccess = data.Deserialize(reinterpret_cast<uint8_t *>(recvbuf));
+
+			if (!isSuccess)
+			{
+				printf("message: Not an RUDP packet\n");
+			}
+			else
+			{
+				printf("message [%d bytes]:\t(seq:%d ack:%d ack_bit:%d)\t%s\n"
+					, bytesReceived, data.Sequence(), data.Ack(), data.AckBitfield(), data.Message().c_str());
+			}
+
+			printf("waiting on port %s\n", DEFAULT_PORT);
+		}*/
 	}
 }

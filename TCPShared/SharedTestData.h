@@ -63,6 +63,6 @@ static const std::uint32_t DEFAULT_BUFLEN = 512;//RoundUpToPowerOfTwo(TEST_MESSA
 static char * const DEFAULT_PORT = "27015";//"80";
 static char * const DEFAULT_IP = "10.8.3.35";
 //static char * const DEFAULT_IP = "127.0.0.1";
-//static char * const DEFAULT_IP = "192.168.0.6";
+//static char * const DEFAULT_IP = "192.168.0.4";
 
 static unsigned short const RELIABLE_UDP_ID = 0xABCD;

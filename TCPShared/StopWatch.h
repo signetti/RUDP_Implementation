@@ -60,15 +60,46 @@ class StopWatch
 {
 private:
 	std::chrono::high_resolution_clock::time_point mStartTime;
+	std::chrono::high_resolution_clock::time_point mLapTime;
 	TimeRecorder<UnitTime> * mRecorderRef;
 	static const double CLOCKS_PER_MICROSECONDS;
 public:
-	StopWatch(TimeRecorder<UnitTime>& recorder) : mRecorderRef(&recorder), mStartTime(std::chrono::high_resolution_clock::now()) 	{}
+	StopWatch(TimeRecorder<UnitTime>& recorder) : mRecorderRef(&recorder), mStartTime(std::chrono::high_resolution_clock::now()) 	
+	{
+		mLapTime = mStartTime;
+	}
+	StopWatch() : mRecorderRef(nullptr), mStartTime(std::chrono::high_resolution_clock::now())
+	{
+		mLapTime = mStartTime;
+	}
 	~StopWatch() 
 	{
+		if (mRecorderRef != nullptr)
+		{
+			std::chrono::high_resolution_clock::time_point endTime = std::chrono::high_resolution_clock::now();
+			UnitTime elapsedTime = std::chrono::duration_cast<UnitTime>(endTime - mLapTime);
+			mRecorderRef->LapTime(elapsedTime);
+		}
+	}
+	UnitTime GetTotalLifetime()
+	{
+		return std::chrono::duration_cast<UnitTime>(std::chrono::high_resolution_clock::now() - mStartTime);
+	}
+	UnitTime LapTime()
+	{
+		// Calculate Lap Time
 		std::chrono::high_resolution_clock::time_point endTime = std::chrono::high_resolution_clock::now();
-		UnitTime elapsedTime = std::chrono::duration_cast<UnitTime>(endTime - mStartTime);
-		mRecorderRef->LapTime(elapsedTime);
+		UnitTime elapsedTime = std::chrono::duration_cast<UnitTime>(endTime - mLapTime);
+
+		// Save Lap Time
+		if (mRecorderRef != nullptr)
+		{
+			mRecorderRef->LapTime(elapsedTime);
+		}
+		mLapTime = endTime;
+
+		// Return results
+		return elapsedTime;
 	}
 };
 template <typename UnitTime>

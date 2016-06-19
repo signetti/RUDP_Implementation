@@ -10,6 +10,8 @@
 #include <ws2tcpip.h>
 
 #include "RPacket.h"
+#include "RUDPStream.h"
+#include "RUDPClient.h"
 
 #include <assert.h>
 int BP(int condition)
@@ -17,8 +19,25 @@ int BP(int condition)
 	return condition;
 }
 
+int GetError(SOCKET sock)
+{
+	int error = 0;
+	socklen_t len = sizeof(error);
+	int retval = getsockopt(sock, SOL_SOCKET, SO_ERROR, reinterpret_cast<char*>(&error), &len);
+
+	if (retval != 0)
+	{
+		/* there was a problem getting the error code */
+		printf("Error getting socket, error code: %d\n", WSAGetLastError());
+	}
+	return retval;
+}
+
 int __cdecl main()
 {
+	// Re-seed
+	srand(static_cast<unsigned int>(time(0)));
+	/*
 	WSAManager::StartUp();
 	// Create Socket
 	SOCKET sock;
@@ -47,63 +66,54 @@ int __cdecl main()
 		mInfo = NULL;
 		return BP(1);
 	}
-	/*
-	// Bind to Socket
-	result = bind(sock, mInfo->ai_addr, (int)mInfo->ai_addrlen);
-	if (result == SOCKET_ERROR)
+
+	// Create RUDPStream
+	RUDPStream server(sock, *(mInfo->ai_addr));
+	*/
+
+	// ===================== Begin Connection to Server =====================
+	RUDPStream server = RUDPClient::ConnectToServer(DEFAULT_IP, DEFAULT_PORT, 1500);
+
+	if (server.IsOpen() == false)
 	{
-		printf("ServerSocket: Failed to connect\n");
-		return BP(1);
-	}*/
-
-
-	// Create Protocol ID
-	//char sendbuf[DEFAULT_BUFLEN];
-	//*((unsigned short *)sendbuf) = RELIABLE_UDP_ID;
-
-	// Copy message
-	//memcpy(&sendbuf[2],TEST_MESSAGE.c_str(), TEST_MESSAGE.length());
-
-	// Create RUDP Packet
-	srand(static_cast<unsigned int>(time(0)));
-	RPacket packet(rand() % 100, rand() % 100, rand() % 100, TEST_MESSAGE);
-	if (rand() % 2 == 0)
-	{
-		packet.BecomeBadPacket();
+		printf("Failed to create server connection.");
+		return BP(0);
 	}
-	std::vector<uint8_t> serial = packet.Serialize();
+	GetError(server.mSocket);
 
+	printf("Created RUDP Server: socket<%d> address<%d.%d.%d.%d.%d.%d.%d.%d.%d.%d>\n", server.mSocket
+		, (uint8_t)(server.mToAddress.sa_data[0]), (uint8_t)(server.mToAddress.sa_data[1]), (uint8_t)(server.mToAddress.sa_data[2]), (uint8_t)(server.mToAddress.sa_data[3]), (uint8_t)(server.mToAddress.sa_data[4])
+		, (uint8_t)(server.mToAddress.sa_data[5]), (uint8_t)(server.mToAddress.sa_data[6]), (uint8_t)(server.mToAddress.sa_data[7]), (uint8_t)(server.mToAddress.sa_data[8]), (uint8_t)(server.mToAddress.sa_data[9]));
 
-	// Send To Server
-	int server_length = sizeof(struct sockaddr_in);
-	//int bytesReceived;
-	int bytesSent;
+	// Notify that connection is reached
+	printf("Client-Server Connection Established.\n");
 
-	bytesSent = sendto(sock, reinterpret_cast<const char *>(serial.data()), static_cast<int>(serial.size()), 0, mInfo->ai_addr, server_length);
-	if (bytesSent < 0)
+	for (;;)
 	{
-		printf("Failed to send datagram");
-		return BP(1);
+		// Create RUDP Packet
+		RPacket packet(rand() % 100, rand() % 100, rand() % 100, TEST_MESSAGE);
+		if (rand() % 5 == 0)
+		{
+			packet.BecomeBadPacket();
+		}
+		std::vector<uint8_t> serial = packet.Serialize();
+
+		// Send To Server
+		int bytesSent;
+
+		bytesSent = server.Send(reinterpret_cast<const char *>(serial.data()), static_cast<int>(serial.size()));
+		if (bytesSent < 0)
+		{
+			printf("Failed to send datagram");
+			//return BP(1);
+		}
+		else
+		{
+			printf("message sent [%d bytes]:\t(id:%X seq:%d ack:%d ack_bit:%d)\t%s\n"
+				, bytesSent, packet.Id(), packet.Sequence(), packet.Ack(), packet.AckBitfield(), packet.Message().c_str());
+		}
+
+		Sleep((rand() % 1000) + 2000);
 	}
-	else
-	{
-		printf("message sent [%d bytes]:\t(id:%X seq:%d ack:%d ack_bit:%d)\t%s\n"
-			, bytesSent, packet.Id(), packet.Sequence(), packet.Ack(), packet.AckBitfield(), packet.Message().c_str());
-	}
-
-	/*
-	// Receive from
-	bytesReceived = recvfrom(sock, recvbuf, STRLEN, 0, mInfo->ai_addr, &server_length);
-	if (bytesReceived > 0)
-	{
-		printf("message [%d bytes]:\t %s\n", bytesReceived, recvbuf);
-	}
-	else 
-	{
-		printf("Failed to receive datagram");
-		return BP(1);
-	}*/
-
-    return BP(0);
 }
 

@@ -54,7 +54,7 @@ SOCKET TCPClient::InitializeClient(char * ip, char * port)
 	if (result != 0)
 	{
 		printf("getaddrinfo failed with error: %d\n", result);
-		return false;
+		return INVALID_SOCKET;
 	}
 
 	SOCKET serverSocket = GetServerSocket(info);
