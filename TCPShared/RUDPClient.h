@@ -7,6 +7,12 @@ class RUDPStream;
 class RUDPClient
 {
 private:
+
+	static int Connect(const SOCKET& serverSocket, const struct sockaddr& serverAddress, uint32_t maxConnectionTimeOut);
+	// Gets the address information and calls GetServerSocket to complete socket creation.
+	static RUDPStream GetServerStream(char * ip, char * port, uint32_t maxConnectionTimeOut);
+
+
 	// Gets the address information and calls GetServerSocket to complete socket creation.
 	static RUDPStream InitializeClient(char * ip, char * port, uint32_t maxConnectionTimeOut);
 	// Returns a socket that is connected to server, returns invalid socket if connection fails.

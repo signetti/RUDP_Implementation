@@ -65,4 +65,19 @@ static char * const DEFAULT_IP = "10.8.3.35";
 //static char * const DEFAULT_IP = "127.0.0.1";
 //static char * const DEFAULT_IP = "192.168.0.4";
 
-static unsigned short const RELIABLE_UDP_ID = 0xABCD;
+//static unsigned short const RELIABLE_UDP_ID = 0xABCD;
+
+/*
+int GetError(SOCKET sock)
+{
+	int error = 0;
+	socklen_t len = sizeof(error);
+	int retval = getsockopt(sock, SOL_SOCKET, SO_ERROR, reinterpret_cast<char*>(&error), &len);
+
+	if (retval != 0)
+	{
+		// there was a problem getting the error code
+		printf("Error getting socket, error code: %d\n", WSAGetLastError());
+	}
+	return retval;
+}*/

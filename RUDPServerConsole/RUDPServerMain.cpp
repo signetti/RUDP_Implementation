@@ -20,22 +20,6 @@ int BP(int condition)
 	return condition;
 }
 
-
-
-int GetError3(SOCKET sock)
-{
-	int error = 0;
-	socklen_t len = sizeof(error);
-	int retval = getsockopt(sock, SOL_SOCKET, SO_ERROR, reinterpret_cast<char*>(&error), &len);
-
-	if (retval != 0)
-	{
-		/* there was a problem getting the error code */
-		printf("Error getting socket, error code: %d\n", WSAGetLastError());
-	}
-	return retval;
-}
-
 int __cdecl main()
 {
 	// Re-seed
@@ -100,15 +84,11 @@ int __cdecl main()
 	printf("Retrieving Client. . . \n");
 	RUDPStream& client = *server.Accept();
 
-	GetError3(client.mSocket);
-
 	if (client.IsOpen() == false)
 	{
 		printf("Failed to create client connection.");
 		return BP(0);
 	}
-
-	GetError3(client.mSocket);
 
 	// Notify that connection is reached
 	printf("Client-Server Connection Established.\n");
@@ -128,7 +108,6 @@ int __cdecl main()
 	{
 		// Sending Packets
 		{
-			GetError3(client.mSocket);
 			bytesReceived = client.Receive(recvbuf, DEFAULT_BUFLEN);
 			if (bytesReceived <= 0)
 			{

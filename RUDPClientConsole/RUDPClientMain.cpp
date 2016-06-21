@@ -19,20 +19,6 @@ int BP(int condition)
 	return condition;
 }
 
-int GetError(SOCKET sock)
-{
-	int error = 0;
-	socklen_t len = sizeof(error);
-	int retval = getsockopt(sock, SOL_SOCKET, SO_ERROR, reinterpret_cast<char*>(&error), &len);
-
-	if (retval != 0)
-	{
-		/* there was a problem getting the error code */
-		printf("Error getting socket, error code: %d\n", WSAGetLastError());
-	}
-	return retval;
-}
-
 int __cdecl main()
 {
 	// Re-seed
@@ -79,7 +65,6 @@ int __cdecl main()
 		printf("Failed to create server connection.");
 		return BP(0);
 	}
-	GetError(server.mSocket);
 
 	printf("Created RUDP Server: socket<%d> address<%d.%d.%d.%d.%d.%d.%d.%d.%d.%d>\n", server.mSocket
 		, (uint8_t)(server.mToAddress.sa_data[0]), (uint8_t)(server.mToAddress.sa_data[1]), (uint8_t)(server.mToAddress.sa_data[2]), (uint8_t)(server.mToAddress.sa_data[3]), (uint8_t)(server.mToAddress.sa_data[4])

@@ -31,60 +31,44 @@ RPacket::RPacket(const Packet * packet) : mId(packet->prot_id())
 
 RPacket::~RPacket() {}
 
-bool RPacket::IsBadPacket() 
+bool RPacket::IsBadPacket() const
 {
 	return mId != RUDP_ID;
 }
 
-std::uint32_t RPacket::Id()
+std::uint32_t RPacket::Id() const
 {
 	return mId;
 }
 
-std::uint32_t RPacket::Sequence()
+std::uint32_t RPacket::Sequence() const
 {
 	return mSeq;
 }
 
-std::uint32_t RPacket::Ack()
+std::uint32_t RPacket::Ack() const
 {
 	return mAck;
 }
 
-std::uint32_t RPacket::AckBitfield()
+std::uint32_t RPacket::AckBitfield() const
 {
 	return mAckBitfield;
 }
 
-std::vector<uint8_t> RPacket::Buffer()
+std::vector<uint8_t> RPacket::Buffer() const
 {
 	return mBuffer;
 }
 
-std::string RPacket::Message()
+std::string RPacket::Message() const
 {
 	return std::string(mBuffer.begin(), mBuffer.end());
 }
 
-std::vector<uint8_t> RPacket::Serialize()
+std::vector<uint8_t> RPacket::Serialize() const
 {
 	return SerializeInstance(mId, mSeq, mAck, mAckBitfield, mBuffer);
-	/*
-	uint8_t * packet_serialized_1;
-	uint32_t size_1;
-
-	flatbuffers::FlatBufferBuilder builder;
-	
-	auto buffer = builder.CreateVector(mBuffer);
-	auto packet = CreatePacket(builder, mId, mSeq, mAck, mAckBitfield, static_cast<uint32_t>(mBuffer.size()), buffer);
-
-	builder.Finish(packet);
-
-	packet_serialized_1 = builder.GetBufferPointer();
-	size_1 = builder.GetSize();
-	
-	return CopyBytes(packet_serialized_1, size_1);
-	*/
 }
 
 void RPacket::BecomeBadPacket()

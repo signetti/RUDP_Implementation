@@ -68,6 +68,7 @@ public:
 	*	@return returns true if successful, false otherwise.
 	*/
 	bool Listen();
+	bool Listen2();
 
 
 	/**
