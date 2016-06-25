@@ -73,6 +73,12 @@ public:
 	*	@param	message		The message to send to the receiver, as raw bytes
 	*	@return returns the number of bytes sent. '0' means a drop in connection, and less than '0' is an error.
 	*/
+	int Send(const uint8_t * data, int sizeOfData);
+	/**
+	*	Send the message to the receiving end of the stream
+	*	@param	message		The message to send to the receiver, as raw bytes
+	*	@return returns the number of bytes sent. '0' means a drop in connection, and less than '0' is an error.
+	*/
 	virtual int Send(const char * data, int sizeOfData);
 
 	/**

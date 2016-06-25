@@ -18,7 +18,7 @@ int __cdecl main()
 	bool success;
 
 	// Create a server that is listening to the defined-port
-	TCPServer server(DEFAULT_PORT);
+	TCPServer server(DEFAULT_SERVER_PORT);
 
 	// Open the server for connection (create socket, bind, then listen)
 	success = server.Open();

@@ -24,56 +24,12 @@ int __cdecl main()
 {
 	// Re-seed
 	srand(static_cast<unsigned int>(time(0)));
-	/*
-	WSAManager::StartUp();
-
-	// Create Socket
-	SOCKET sock;
-	sock = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
-	if (sock == INVALID_SOCKET)
-	{
-		printf("Could not create socket.\n");
-		return BP(1);
-	}
-
-	struct addrinfo hints;
-	struct addrinfo * info;
-
-	// Get Address Information from the given IP and Port
-	ZeroMemory(&hints, sizeof(hints));
-	hints.ai_family = AF_INET;
-	hints.ai_socktype = SOCK_DGRAM;
-	hints.ai_protocol = IPPROTO_UDP;
-	hints.ai_flags = AI_PASSIVE;     // fill in my IP for me
-
-	int result;
-
-	// Resolve the server address and port
-	result = getaddrinfo(NULL, DEFAULT_PORT, &hints, &info);
-	if (result != 0)
-	{
-		printf("getaddrinfo failed with error: %d\n", result);
-		return BP(0);
-	}
-
-	// Bind to Socket
-	result = bind(sock, info->ai_addr, (int)info->ai_addrlen);
-	if (result == SOCKET_ERROR)
-	{
-		printf("ServerSocket: Failed to connect\n");
-		return BP(1);
-	}
-	freeaddrinfo(info);
-
-	// Create RUDPStream
-	RUDPStream client(sock);
-	*/
 
 	// ============== Initialize Server Connection ==============
 	bool success;
 
 	// Create a server that is listening to the defined-port
-	RUDPServer server(DEFAULT_PORT, 1000);
+	RUDPServer server(DEFAULT_SERVER_PORT, 1000);
 
 	// Open the server for connection (create socket, bind, then listen)
 	printf("Awaiting Client. . . \n");
@@ -103,7 +59,7 @@ int __cdecl main()
 
 	//struct sockaddr client_addr;
 	RPacket data;
-	printf("waiting on port %s\n", DEFAULT_PORT);
+	printf("waiting on port %s\n", DEFAULT_SERVER_PORT);
 	for (;;)
 	{
 		// Sending Packets
@@ -127,7 +83,7 @@ int __cdecl main()
 					, bytesReceived, data.Sequence(), data.Ack(), data.AckBitfield(), data.Message().c_str());
 			}
 
-			printf("waiting on port %s\n", DEFAULT_PORT);
+			printf("waiting on port %s\n", DEFAULT_SERVER_PORT);
 		}
 		/*
 		// Receiving Packets

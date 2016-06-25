@@ -2,11 +2,11 @@
 #include <string>
 
 // Message to test on submission
-static const std::string TEST_MESSAGE = "\
+static const std::string TEST_MESSAGE = ".";/*"\
 ***************************************************************|\
 ===============================================================|\
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~|\
----------------------------------------------------------------";
+---------------------------------------------------------------";*/
 
 // Validates the test message received with the test message in the system
 bool ValidateMessageReceived(char * message, int size)
@@ -60,7 +60,8 @@ static const std::uint32_t NUM_OF_TEST_RUNS = 100;
 
 static const std::uint32_t DEFAULT_BUFLEN = 512;//RoundUpToPowerOfTwo(TEST_MESSAGE.length() + 20);
 
-static char * const DEFAULT_PORT = "27015";//"80";
+static char * const DEFAULT_SERVER_PORT = "27015";
+static char * const DEFAULT_CLIENT_PORT = "27016";
 static char * const DEFAULT_IP = "10.8.3.35";
 //static char * const DEFAULT_IP = "127.0.0.1";
 //static char * const DEFAULT_IP = "192.168.0.4";

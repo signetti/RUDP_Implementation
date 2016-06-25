@@ -14,7 +14,7 @@ int BP(int condition)
 int __cdecl main()
 {
 	// ===================== Begin Connection to Server =====================
-	TCPStream server = TCPClient::ConnectToServer(DEFAULT_IP, DEFAULT_PORT);
+	TCPStream server = TCPClient::ConnectToServer(DEFAULT_IP, DEFAULT_SERVER_PORT);
 
 	// Notify that connection is reached
 	printf("Client-Server Connection Established.");

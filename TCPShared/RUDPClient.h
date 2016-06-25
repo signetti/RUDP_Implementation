@@ -10,7 +10,7 @@ private:
 
 	static int Connect(const SOCKET& serverSocket, const struct sockaddr& serverAddress, uint32_t maxConnectionTimeOut);
 	// Gets the address information and calls GetServerSocket to complete socket creation.
-	static RUDPStream GetServerStream(char * ip, char * port, uint32_t maxConnectionTimeOut);
+	static RUDPStream GetServerStream(char * ip, char * port, char * clientPort, uint32_t maxConnectionTimeOut);
 
 
 	// Gets the address information and calls GetServerSocket to complete socket creation.
@@ -28,6 +28,6 @@ public:
 	*	@param	port	Server port number.
 	*	@return returns a TCPStream with an open socket connecting to the server. Returns an invalid stream if connection fails.
 	*/
-	static RUDPStream ConnectToServer(char * ip, char * port, uint32_t maxConnectionTimeOut);
+	static RUDPStream ConnectToServer(char * ip, char * port, char * clientPort, uint32_t maxConnectionTimeOut);
 };
 

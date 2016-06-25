@@ -23,42 +23,9 @@ int __cdecl main()
 {
 	// Re-seed
 	srand(static_cast<unsigned int>(time(0)));
-	/*
-	WSAManager::StartUp();
-	// Create Socket
-	SOCKET sock;
-	sock = socket(AF_UNSPEC, SOCK_DGRAM, IPPROTO_UDP);
-	if (sock == INVALID_SOCKET)
-	{
-		printf("Could not create socket.\n");
-		return BP(1);
-	}
-
-	// Get Address
-	struct addrinfo hints;
-	ZeroMemory(&hints, sizeof(hints));
-	hints.ai_family = AF_UNSPEC;
-	hints.ai_socktype = SOCK_DGRAM;
-	hints.ai_protocol = IPPROTO_UDP;
-
-	// Resolve the server address and port
-	struct addrinfo* mInfo;
-	int result;
-
-	result = getaddrinfo(DEFAULT_IP, DEFAULT_PORT, &hints, &mInfo);
-	if (result != 0)
-	{
-		printf("getaddrinfo failed with error: %d\n", result);
-		mInfo = NULL;
-		return BP(1);
-	}
-
-	// Create RUDPStream
-	RUDPStream server(sock, *(mInfo->ai_addr));
-	*/
 
 	// ===================== Begin Connection to Server =====================
-	RUDPStream server = RUDPClient::ConnectToServer(DEFAULT_IP, DEFAULT_PORT, 1500);
+	RUDPStream server = RUDPClient::ConnectToServer(DEFAULT_IP, DEFAULT_SERVER_PORT, DEFAULT_CLIENT_PORT, 1500);
 
 	if (server.IsOpen() == false)
 	{
