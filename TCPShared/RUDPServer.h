@@ -24,6 +24,11 @@ private:
 	std::vector<PendingClientsT> mAcknowledgeTable;
 	std::vector<PendingClientsT> mAcceptedClients;
 
+	// Available Open Socket for incoming clients
+	SOCKET mClientSocket;
+	// Available Port Number
+	uint32_t mAvailablePort;
+
 	// The listening socket
 	SOCKET mListenSocket;
 	// Address information on the listening socket
@@ -36,12 +41,15 @@ private:
 	// How long to wait for acknowledgement of connection
 	std::uint32_t mMaxConnectionTimeOut;
 
+	static std::string IntToString(uint32_t number);
+
+	static bool CreateNewSocket(SOCKET& sock, std::string port);
 public:
 	/**
 	*	TCPServer constructor
 	*	@param	port	Server port number to bind and listen to
 	*/
-	RUDPServer(const std::string& listenPort, std::uint32_t maxConnectionTimeOut);
+	RUDPServer(std::uint32_t listenPort, std::uint32_t maxConnectionTimeOut);
 	~RUDPServer();
 
 	/**

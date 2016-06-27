@@ -1,0 +1,14 @@
+// Example IDL file for our monster's schema.
+
+//namespace Test.Sample;
+
+table Packet {
+  prot_id:uint;
+  sequence:uint;
+  ack:uint;
+  ack_bitfield:uint;
+  buffer_size:uint;
+  buffer:[ubyte];
+}
+
+root_type Packet;

@@ -4,9 +4,11 @@
 #include "RPacket.h"
 #include "StopWatch.h"
 
+#include <sstream>
 
-RUDPServer::RUDPServer(const std::string& listenPort, std::uint32_t maxConnectionTimeOut)
-	: mListenSocket(INVALID_SOCKET), mInfo(NULL), mPort(listenPort), mAcknowledgeTable(), mAcceptedClients(), mMaxConnectionTimeOut(maxConnectionTimeOut)
+RUDPServer::RUDPServer(std::uint32_t listenPort, std::uint32_t maxConnectionTimeOut) : mListenSocket(INVALID_SOCKET), mInfo(NULL)
+	, mPort(IntToString(listenPort)), mClientSocket(INVALID_SOCKET), mAvailablePort(listenPort + 1), mMaxConnectionTimeOut(maxConnectionTimeOut)
+	, mAcknowledgeTable(), mAcceptedClients()
 {
 	// Start-Up the WSA Library
 	WSAManager::StartUp();
@@ -86,7 +88,7 @@ bool RUDPServer::Bind()
 		return false;
 	}
 
-	// Setup the TCP listening socket
+	// Bind the socket to the computer's port
 	result = bind(mListenSocket, mInfo->ai_addr, (int)mInfo->ai_addrlen);
 	if (result == SOCKET_ERROR)
 	{
@@ -97,10 +99,17 @@ bool RUDPServer::Bind()
 	else return true;
 }
 
-bool CreateRandomSocket(SOCKET& sock, std::string port)
+std::string RUDPServer::IntToString(uint32_t number)
+{
+	std::stringstream message;
+	message << number;
+	return message.str();
+}
+
+bool RUDPServer::CreateNewSocket(SOCKET& sock, std::string port)
 {
 	// ============ Create Socket ============
-	struct addrinfo* mInfo;
+	struct addrinfo* info;
 	struct addrinfo hints;
 	int result;
 
@@ -113,21 +122,44 @@ bool CreateRandomSocket(SOCKET& sock, std::string port)
 	hints.ai_flags = AI_PASSIVE;
 
 	// Resolve the server address and port
-	result = getaddrinfo(NULL, port.c_str(), &hints, &mInfo);
+	result = getaddrinfo(NULL, port.c_str(), &hints, &info);
 	if (result != 0)
 	{
 		printf("getaddrinfo failed with error: %d\n", result);
-		mInfo = NULL;
 		return false;
 	}
 
 	// Create Socket
-	sock = socket(mInfo->ai_family, mInfo->ai_socktype, mInfo->ai_protocol);
+	sock = socket(info->ai_family, info->ai_socktype, info->ai_protocol);
 	if (sock == INVALID_SOCKET)
 	{
 		printf("socket failed with error: %ld\n", WSAGetLastError());
+		freeaddrinfo(info);
 		return false;
 	}
+
+	// Bind the socket to the computer's port
+	result = bind(sock, info->ai_addr, (int)info->ai_addrlen);
+	if (result == SOCKET_ERROR)
+	{
+		printf("bind failed with error: %d\n", WSAGetLastError());
+		closesocket(sock);
+		freeaddrinfo(info);
+		return false;
+	}
+
+	// Make Socket Non-Blocking
+	DWORD blocking = 0;
+	if (ioctlsocket(sock, FIONBIO, &blocking) != 0)
+	{
+		printf("failed to set blocking\n");
+		assert(0);
+		return false;
+	}
+
+	// New Socket Ready! Clean up...
+	freeaddrinfo(info);
+
 	return true;
 }
 
@@ -142,6 +174,7 @@ bool RUDPServer::Listen()
 	uint32_t seqNum;
 	uint32_t ackNum;
 	RPacket data;
+	bool isSuccess;
 
 	/** Perform Three-way Hand-shaking
 	*	This works as follows
@@ -161,8 +194,23 @@ bool RUDPServer::Listen()
 		return false;
 	}
 
+	// TODO: Find reason why this code does not work across computers...
+	/*
+	// Find and Set Open Client Port
+	uint32_t MAX_PORT_CHECK;
+	for (MAX_PORT_CHECK = mAvailablePort + 9, isSuccess = false; !isSuccess && mAvailablePort <= MAX_PORT_CHECK; ++mAvailablePort)
+	{
+		isSuccess = CreateNewSocket(mClientSocket, IntToString(mAvailablePort));
+	}
+
+	if (mAvailablePort > MAX_PORT_CHECK)
+	{
+		printf("failed to open new port for incoming client\n");
+		return false;
+	}*/
+	mClientSocket = mListenSocket;
+
 	// Listen for any RUDP Packets from clients
-	bool isSuccess;
 
 	// Listen for incoming message
 	for (;;)
@@ -218,10 +266,9 @@ bool RUDPServer::Listen()
 				{	// Successful Acknowledgement from Client!
 					printf("Acknowledged Connection: Received seq <%d> ack<%d>\n", data.Sequence(), data.Ack());
 
-					// Create new Socket for Client to Communicate with...
-					// TODO: Replace with different Socket
+					// Make Socket Blocking
 					DWORD blocking = 0;
-					if (ioctlsocket(mListenSocket, FIONBIO, &blocking) != 0)
+					if (ioctlsocket(mClientSocket, FIONBIO, &blocking) != 0)
 					{
 						printf("failed to set blocking\n");
 						assert(0);
@@ -230,7 +277,7 @@ bool RUDPServer::Listen()
 
 					// Assign new Socket to Client
 					auto& client = mAcknowledgeTable[index];
-					client.sock = mListenSocket;
+					client.sock = mClientSocket;
 
 					// Add to Accepted Clients Table
 					mAcceptedClients.emplace_back(client);
@@ -257,7 +304,7 @@ bool RUDPServer::Listen()
 
 				std::vector<uint8_t> acknowledgePacket = RPacket::SerializeInstance(seqNum, ackNum, 0, std::vector<uint8_t>());
 
-				bytesSent = sendto(mListenSocket, reinterpret_cast<char *>(acknowledgePacket.data()), static_cast<int>(acknowledgePacket.size()), 0, &fromAddress, ADDR_LEN);
+				bytesSent = sendto(mClientSocket, reinterpret_cast<char *>(acknowledgePacket.data()), static_cast<int>(acknowledgePacket.size()), 0, &fromAddress, ADDR_LEN);
 				if (bytesSent < 0)
 				{
 					printf("sendto failed with error: %d\n", WSAGetLastError());
@@ -299,7 +346,7 @@ bool RUDPServer::Listen()
 					std::vector<uint8_t> acknowledgePacket = RPacket::SerializeInstance(ackInfo.seqNumSent, ackInfo.ackNumRecvd, 0, std::vector<uint8_t>());
 
 					// Send the Acknowledgement Packet
-					bytesSent = sendto(mListenSocket, reinterpret_cast<char *>(acknowledgePacket.data()), static_cast<int>(acknowledgePacket.size()), 0, &ackInfo.addr, ADDR_LEN);
+					bytesSent = sendto(mClientSocket, reinterpret_cast<char *>(acknowledgePacket.data()), static_cast<int>(acknowledgePacket.size()), 0, &ackInfo.addr, ADDR_LEN);
 					if (bytesSent < 0)
 					{
 						printf("sendto failed with error: %d\n", WSAGetLastError());
@@ -404,171 +451,4 @@ void RUDPServer::Close()
 		}
 	}
 	mClients.clear();
-}
-
-bool RUDPServer::Listen2()
-{
-	/** Perform Three-way Hand-shaking
-	*	This works as follows
-	*	 - Client sends message with SeqNum X
-	*	 - Server receives message and returns message with SeqNum Y and AckNum X+1
-	*	 - Client receives, checks AckNum for X+1, and returns message with AckNum Y+1
-	*	 - Server receives message, checks AckNum for Y+1, and
-	*	Returning the Num+1 tells the receiving end that the number was recognized.
-	*/
-	int bytesReceived;
-	int bytesSent;
-	char buffer[512];
-	struct sockaddr clientAddress;
-	int temp = sizeof(struct sockaddr_in);
-	uint32_t seqNum;
-	uint32_t ackNum;
-	RPacket data;
-
-	// Before beginning the process, we must make the recvfrom non-blocking
-	// This is to check on a time-out period to deliver the message again.
-	DWORD nonBlocking = 1;
-	if (ioctlsocket(mListenSocket, FIONBIO, &nonBlocking) != 0)
-	{
-		printf("failed to set non-blocking\n");
-		return false;
-	}
-
-	// Listen for any RUDP Packets from clients
-	for (;;)
-	{
-		// Listen for incoming message
-		for (;;)
-		{
-			// Check if packet is received
-			bytesReceived = recvfrom(mListenSocket, buffer, 512, 0, &clientAddress, &temp);
-			if (bytesReceived > 0) break;
-
-			// Packet not received, check if any requests timed out
-			std::chrono::high_resolution_clock::time_point checkTime = std::chrono::high_resolution_clock::now();
-			for (auto& ackInfo : mAcknowledgeTable)
-			{
-				if (std::chrono::duration_cast<std::chrono::milliseconds>(checkTime - ackInfo.time_stamp).count() >= mMaxConnectionTimeOut)
-				{	// Connection timed-out for this acknowledgement
-					// Re-send the acknowledgement of connection
-
-					printf("Connection timed out for Client %s\n", ackInfo.addr.sa_data);
-
-					std::vector<uint8_t> acknowledgePacket = RPacket::SerializeInstance(ackInfo.seqNumSent, ackInfo.ackNumRecvd, 0, std::vector<uint8_t>());
-
-					bytesSent = sendto(mListenSocket, reinterpret_cast<char *>(acknowledgePacket.data()), static_cast<int>(acknowledgePacket.size()), 0, &ackInfo.addr, temp);
-					if (bytesSent < 0)
-					{
-						printf("sendto failed with error: %d\n", WSAGetLastError());
-						assert(false);
-					}
-					else
-					{
-						printf("Establishing Connection: Sending seq <%d> ack<%d>\n", ackInfo.seqNumSent, ackInfo.ackNumRecvd);
-
-						ackInfo.time_stamp = checkTime;
-					}
-				}
-			}
-		}
-
-		// Convert bytes to RUDP packet information
-		bool isSuccess = data.Deserialize(reinterpret_cast<uint8_t *>(buffer));
-
-		if (!isSuccess)
-		{	// Packet is not an RUDP Packet, continue listening
-			printf("Received non-RUDP Packet\n");
-			continue;
-		}
-
-		// Check if Client's message is for acknowledging server's request or requesting connection
-		isSuccess = false;
-		size_t index;
-		for (index = 0; index < mAcknowledgeTable.size(); ++index)
-		{
-			auto& ackInfo = mAcknowledgeTable[index];
-
-			if (strcmp(ackInfo.addr.sa_data, clientAddress.sa_data) == 0)
-			{
-				// This client has been acknowledged before
-				// Check timestamp to make sure it's not timed-out
-				//			. . . time-out check . . .
-				//				ignored at this time
-
-				// Check if Acknowledgement is correct
-				if (data.Ack() != ackInfo.seqNumSent + 1U)
-				{
-					break;
-				}
-
-				// Acknowledgement is approved
-				isSuccess = true;
-				break;
-			}
-		}
-
-		// Determine if the Client's message is requesting connection or returning acknowledged connection
-		if (isSuccess)
-		{	// Successful Acknowledgement from Client!
-			auto& ackInfo = mAcknowledgeTable[index];
-
-			// TODO: Replace with different Socket
-			DWORD blocking = 0;
-			if (ioctlsocket(mListenSocket, FIONBIO, &blocking) != 0)
-			{
-				printf("failed to set blocking\n");
-				assert(0);
-				return false;
-			}
-
-			ackInfo.sock = mListenSocket;
-
-			mAcceptedClients.emplace_back(ackInfo);
-
-			// Remove from Acknowledgement Table
-			mAcknowledgeTable.erase(mAcknowledgeTable.begin() + index);
-
-			printf("Acknowledging Connection: Received seq <%d> ack<%d>\n", data.Sequence(), data.Ack());
-			printf("Connection Established!\n");
-
-			return true;
-		}
-		else
-		{
-			// This client is either new or had a bad acknowledgment
-			// Return Acknowledgement to Establishing Connection
-
-			if (index < mAcknowledgeTable.size())
-			{
-				// Client has a bad acknowledgent number
-				printf("Received Bad Acknowledgement Number: seq<%d> ack<%d>\n", data.Sequence(), data.Ack());
-
-				seqNum = mAcknowledgeTable[index].seqNumSent;
-				ackNum = mAcknowledgeTable[index].ackNumRecvd;
-			}
-			else
-			{
-				// New Client
-				printf("New Client found!\n");
-				printf("Establishing Connection: Received seq <%d> ack<%d>\n", data.Sequence(), data.Ack());
-
-				seqNum = rand();
-				ackNum = data.Sequence() + 1U;
-
-				std::vector<uint8_t> acknowledgePacket = RPacket::SerializeInstance(seqNum, ackNum, 0, std::vector<uint8_t>());
-
-				bytesSent = sendto(mListenSocket, reinterpret_cast<char *>(acknowledgePacket.data()), static_cast<int>(acknowledgePacket.size()), 0, &clientAddress, temp);
-				if (bytesSent < 0)
-				{
-					printf("sendto failed with error: %d\n", WSAGetLastError());
-					return false;
-				}
-
-				// Store acknowledgement information in table
-				printf("Establishing Connection: Sending  seq <%d> ack<%d>\n", seqNum, ackNum);
-				mAcknowledgeTable.emplace_back(PendingClientsT(clientAddress, seqNum, ackNum, std::chrono::high_resolution_clock::now()));
-			}
-
-		}
-	}
 }
