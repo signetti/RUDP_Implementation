@@ -62,7 +62,21 @@ int __cdecl main()
 	printf("waiting on port %s\n", DEFAULT_SERVER_PORT);
 	for (;;)
 	{
-		// Sending Packets
+		// Receiving Packets
+		{
+			bytesReceived = client.Receive(recvbuf, DEFAULT_BUFLEN);
+			if (bytesReceived <= 0)
+			{
+				continue;
+			}
+
+			std::string message(recvbuf, bytesReceived);
+			printf("%s\n", message.c_str());
+
+			printf("waiting on port %s\n", DEFAULT_SERVER_PORT);
+		}
+		/*
+		// Receiving Packets
 		{
 			bytesReceived = client.Receive(recvbuf, DEFAULT_BUFLEN);
 			if (bytesReceived <= 0)
@@ -84,31 +98,6 @@ int __cdecl main()
 			}
 
 			printf("waiting on port %s\n", DEFAULT_SERVER_PORT);
-		}
-		/*
-		// Receiving Packets
-		{
-			GetError3(client.mSocket);
-			bytesReceived = client.Receive(recvbuf, DEFAULT_BUFLEN);
-			if (bytesReceived <= 0)
-			{
-				continue;
-			}
-
-			// Convert bytes to RUDP packet information
-			bool isSuccess = data.Deserialize(reinterpret_cast<uint8_t *>(recvbuf));
-
-			if (!isSuccess)
-			{
-				printf("message: Not an RUDP packet\n");
-			}
-			else
-			{
-				printf("message [%d bytes]:\t(seq:%d ack:%d ack_bit:%d)\t%s\n"
-					, bytesReceived, data.Sequence(), data.Ack(), data.AckBitfield(), data.Message().c_str());
-			}
-
-			printf("waiting on port %s\n", DEFAULT_PORT);
 		}*/
 	}
 }

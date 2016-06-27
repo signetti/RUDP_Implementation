@@ -34,7 +34,7 @@ private:
 	std::string mPort;
 
 	// How long to wait for acknowledgement of connection
-	std::chrono::milliseconds mMaxConnectionTimeOut;
+	std::uint32_t mMaxConnectionTimeOut;
 
 public:
 	/**

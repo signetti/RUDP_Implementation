@@ -25,6 +25,11 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "RUDPServerConsole", "RUDPSe
 		{2D230842-1456-444F-8F51-0FB21262A70E} = {2D230842-1456-444F-8F51-0FB21262A70E}
 	EndProjectSection
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "RUDPUnitTest", "RUDPUnitTest\RUDPUnitTest.vcxproj", "{A0FEA597-C74D-4A20-880A-750830FA5F34}"
+	ProjectSection(ProjectDependencies) = postProject
+		{2D230842-1456-444F-8F51-0FB21262A70E} = {2D230842-1456-444F-8F51-0FB21262A70E}
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -73,6 +78,14 @@ Global
 		{3208D7F3-04ED-40CA-8D06-ECD92CF1E93C}.Release|x64.Build.0 = Release|x64
 		{3208D7F3-04ED-40CA-8D06-ECD92CF1E93C}.Release|x86.ActiveCfg = Release|Win32
 		{3208D7F3-04ED-40CA-8D06-ECD92CF1E93C}.Release|x86.Build.0 = Release|Win32
+		{A0FEA597-C74D-4A20-880A-750830FA5F34}.Debug|x64.ActiveCfg = Debug|x64
+		{A0FEA597-C74D-4A20-880A-750830FA5F34}.Debug|x64.Build.0 = Debug|x64
+		{A0FEA597-C74D-4A20-880A-750830FA5F34}.Debug|x86.ActiveCfg = Debug|Win32
+		{A0FEA597-C74D-4A20-880A-750830FA5F34}.Debug|x86.Build.0 = Debug|Win32
+		{A0FEA597-C74D-4A20-880A-750830FA5F34}.Release|x64.ActiveCfg = Release|x64
+		{A0FEA597-C74D-4A20-880A-750830FA5F34}.Release|x64.Build.0 = Release|x64
+		{A0FEA597-C74D-4A20-880A-750830FA5F34}.Release|x86.ActiveCfg = Release|Win32
+		{A0FEA597-C74D-4A20-880A-750830FA5F34}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

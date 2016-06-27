@@ -33,7 +33,7 @@ int __cdecl main()
 		return BP(0);
 	}
 
-	printf("Created RUDP Server: socket<%d> address<%d.%d.%d.%d.%d.%d.%d.%d.%d.%d>\n", server.mSocket
+	printf("Created RUDP Server: socket<%d> address<%d.%d.%d.%d.%d.%d.%d.%d.%d.%d>\n", static_cast<int>(server.mSocket)
 		, (uint8_t)(server.mToAddress.sa_data[0]), (uint8_t)(server.mToAddress.sa_data[1]), (uint8_t)(server.mToAddress.sa_data[2]), (uint8_t)(server.mToAddress.sa_data[3]), (uint8_t)(server.mToAddress.sa_data[4])
 		, (uint8_t)(server.mToAddress.sa_data[5]), (uint8_t)(server.mToAddress.sa_data[6]), (uint8_t)(server.mToAddress.sa_data[7]), (uint8_t)(server.mToAddress.sa_data[8]), (uint8_t)(server.mToAddress.sa_data[9]));
 
@@ -42,6 +42,7 @@ int __cdecl main()
 
 	for (;;)
 	{
+		/*
 		// Create RUDP Packet
 		RPacket packet(rand() % 100, rand() % 100, rand() % 100, TEST_MESSAGE);
 		if (rand() % 5 == 0)
@@ -64,6 +65,22 @@ int __cdecl main()
 			printf("message sent [%d bytes]:\t(id:%X seq:%d ack:%d ack_bit:%d)\t%s\n"
 				, bytesSent, packet.Id(), packet.Sequence(), packet.Ack(), packet.AckBitfield(), packet.Message().c_str());
 		}
+		*/
+
+		// Send To Server
+		int bytesSent;
+
+		bytesSent = server.Send(TEST_MESSAGE);
+		if (bytesSent < 0)
+		{
+			printf("Failed to send datagram");
+			//return BP(1);
+		}
+		else
+		{
+			printf("%s\n", TEST_MESSAGE.c_str());
+		}
+
 
 		Sleep((rand() % 1000) + 2000);
 	}

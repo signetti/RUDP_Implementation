@@ -114,9 +114,9 @@ int __cdecl main()
 			logFile << '\n' << testNumber << ',' << bytesReceived << ',' << times[0].count() << ',' << times[1].count() << ',' << ((isDataValid) ? 0 : 1);
 
 			results << "\nReply from server: bytes=" << bytesReceived
-				<< " recv_time="					 << times[0].count()
-				<< "us send_time="					 << times[1].count()
-				<< "us error="						 << ((!isDataValid) ? "true" : "false");
+					<< " recv_time="					 << times[0].count()
+					<< "us send_time="					 << times[1].count()
+					<< "us error="						 << ((!isDataValid) ? "true" : "false");
 			printf(results.str().c_str());
 		}
 		else if (bytesReceived == 0)

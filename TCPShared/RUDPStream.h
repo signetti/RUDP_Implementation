@@ -1,26 +1,44 @@
 #pragma once
 #include <winsock2.h>
 #include <string>
+#include <chrono>
 
 class RUDPStream
 {
 //protected:
 public:
+	// The Maximum Transmission Unit of the average router
+	constexpr static const uint32_t sMaximumTransmissionUnit = 1200;
+	// MTU bytes- 28 Byte IP+UDP Header - 55 byte RUDP header
+	constexpr static const uint32_t sMaximumDataSize = sMaximumTransmissionUnit - 28 - 55;
+	// The Buffer Size (same as the Maximum Transmission Unit)
+	constexpr static const uint32_t& sBufferSize = sMaximumTransmissionUnit;
+	// Sock address size for packet sending
+	static const int32_t SOCK_ADDR_SIZE = sizeof(struct sockaddr_in);
+
+
 	//The socket with which the stream is established
 	SOCKET mSocket;
 	// Address information where to send the packets
 	struct sockaddr mToAddress;
 	// Time (in milliseconds) to wait before determine a connection is lost
 	uint32_t mMaxConnectionTimeOut;
+	// The current sequence number of this sender
+	uint32_t mSequenceNumber;
+	// The remote sequence number from the receiver
+	uint32_t mRemoteSequenceNumber;
 
-	// Sock address size for packet sending
-	static const int32_t SOCK_ADDR_SIZE = sizeof(struct sockaddr_in);
+	// Last time captured since receiving any data from the remote client
+	std::chrono::high_resolution_clock::time_point mLastConnectionTime;
+	// Data to store in the packet
+	char * mBuffer;
+
 public:
 	/**
 	*	TCPStream Constructor
 	*	@param	socket		The socket with which the stream is established
 	*/
-	explicit RUDPStream(const SOCKET& socket, const struct sockaddr& toAddress, uint32_t maxConnectionTimeOut = 2000);
+	explicit RUDPStream(const SOCKET& socket, const struct sockaddr& toAddress, const uint32_t& senderSequenceNumber, const uint32_t& receiverSequenceNumber, uint32_t maxConnectionTimeOut = 2000);
 
 	/**
 	*	TCPStream Constructor for receiving RUDP Connections only
@@ -73,13 +91,13 @@ public:
 	*	@param	message		The message to send to the receiver, as raw bytes
 	*	@return returns the number of bytes sent. '0' means a drop in connection, and less than '0' is an error.
 	*/
-	int Send(const uint8_t * data, int sizeOfData);
+	virtual int Send(const char * data, uint32_t sizeOfData);
 	/**
 	*	Send the message to the receiving end of the stream
 	*	@param	message		The message to send to the receiver, as raw bytes
 	*	@return returns the number of bytes sent. '0' means a drop in connection, and less than '0' is an error.
 	*/
-	virtual int Send(const char * data, int sizeOfData);
+	virtual int Send(const uint8_t * data, uint32_t sizeOfData);
 
 	/**
 	*	Wait to receive a message from the end of the stream
@@ -87,7 +105,7 @@ public:
 	*	@param	sizeOfBuffer	The size of the buffer
 	*	@return returns the number of bytes written to the OutBuffer. '0' means a drop in connection, and less than '0' is an error.
 	*/
-	virtual int Receive(char * OutBuffer, int sizeOfBuffer);
+	virtual int Receive(char * OutBuffer, uint32_t sizeOfBuffer);
 
 	/**
 	*	Shuts down a specific functionality of the stream. Simply a wrapper to the function shutdown(SOCKET,int).

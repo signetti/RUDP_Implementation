@@ -8,7 +8,7 @@ class RUDPClient
 {
 private:
 
-	static int Connect(const SOCKET& serverSocket, const struct sockaddr& serverAddress, uint32_t maxConnectionTimeOut);
+	static RUDPStream Connect(const SOCKET& serverSocket, const struct sockaddr& serverAddress, uint32_t maxConnectionTimeOut);
 	// Gets the address information and calls GetServerSocket to complete socket creation.
 	static RUDPStream GetServerStream(char * ip, char * port, char * clientPort, uint32_t maxConnectionTimeOut);
 

@@ -2,11 +2,36 @@
 #include <string>
 
 // Message to test on submission
-static const std::string TEST_MESSAGE = ".";/*"\
-***************************************************************|\
+static const std::string TEST_MESSAGE = 
+"|Lorem ipsum dolor sit amet, consectetur adipiscing elit. Phasellus \
+eget ex iaculis, imperdiet sem sit amet, efficitur urna. Curabitur \
+rutrum lacinia justo, non maximus massa faucibus in. Sed accumsan \
+ultrices purus sed tempor. Proin tempus non ante quis gravida. Duis \
+elementum lacus mi, et semper leo laoreet ac. Vivamus cursus vel massa \
+elementum convallis. Ut vel eros vitae erat pellentesque dictum. \
+Nullam quis est sem. Integer pulvinar tempus tempus.\n\
+Mauris et justo ac lectus aliquam varius in sit amet ex.Cum sociis \
+natoque penatibus et magnis dis parturient montes, nascetur ridiculus \
+mus.Mauris augue lacus, tincidunt et sollicitudin eget, rhoncus vel diam. \
+Curabitur efficitur lacinia ex, et consequat sem faucibus placerat. Nunc \
+est tellus, mattis nec risus nec, semper viverra elit.Morbi vestibulum \
+rutrum iaculis.Ut eu efficitur velit, nec suscipit tellus.Nunc ultricies \
+in magna a porta.Fusce ac nisl eu dui luctus commodo.Duis nec lorem \
+auctor, suscipit mi non, dictum risus.Etiam molestie nulla ac velit \
+rhoncus auctor.Nam tincidunt dignissim quam vulputate sodales.Class \
+aptent taciti sociosqu ad litora torquent per conubia nostra, per \
+inceptos himenaeos. Curabitur gravida purus non congue laoreet. Ut \
+rhoncus maximus lectus, ac venenatis urna pretium non.Sed luctus \
+pellentesque purus vel ornare.Mauris elit metus, lacinia vel sem vel, \
+porttitor interdum ipsum.Sed sit amet ante nec ipsum ultricies \
+tristique vitae quis neque.Aenean felis enim, facilisis et sem amet.|";
+/*= "\
+!**************************************************************|\
 ===============================================================|\
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~|\
----------------------------------------------------------------";*/
+--------------------------------------------------------------!\
+";*/
+
 
 // Validates the test message received with the test message in the system
 bool ValidateMessageReceived(char * message, int size)
@@ -58,7 +83,7 @@ std::uint32_t RoundUpToPowerOfTwo(std::uint32_t number)
 // Default Test Information
 static const std::uint32_t NUM_OF_TEST_RUNS = 100;
 
-static const std::uint32_t DEFAULT_BUFLEN = 512;//RoundUpToPowerOfTwo(TEST_MESSAGE.length() + 20);
+static const std::uint32_t DEFAULT_BUFLEN = 1200;//RoundUpToPowerOfTwo(TEST_MESSAGE.length() + 20);
 
 static char * const DEFAULT_SERVER_PORT = "27015";
 static char * const DEFAULT_CLIENT_PORT = "27016";
