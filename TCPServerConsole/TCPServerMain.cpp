@@ -43,7 +43,7 @@ int __cdecl main()
 	do
 	{
 		// Send this application's Test Message to Client
-		client.Send(TEST_MESSAGE.c_str());
+		client.Send(TEST_MESSAGE_SMALL.c_str());
 
 		// Get client's Test Message
 		bytesReceived = client.Receive(recvbuf, recvbuflen);
@@ -63,7 +63,7 @@ int __cdecl main()
 		else
 		{
 			// Check Validity of Data received
-			isDataValid = ValidateMessageReceived(recvbuf, bytesReceived);
+			isDataValid = ValidateMessageReceived(TEST_MESSAGE_SMALL, recvbuf, bytesReceived);
 
 			if (isDataValid) break;
 			else
@@ -104,7 +104,7 @@ int __cdecl main()
 		}
 
 		// Check Validity of Data received
-		isDataValid = ValidateMessageReceived(recvbuf, bytesReceived);
+		isDataValid = ValidateMessageReceived(TEST_MESSAGE_SMALL, recvbuf, bytesReceived);
 
 		// Test Complete, Store / Print Results
 		if (bytesReceived > 0)

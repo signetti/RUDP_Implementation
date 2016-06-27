@@ -2,6 +2,13 @@
 #include <string>
 
 // Message to test on submission
+static const std::string TEST_MESSAGE_SMALL = "\
+!**************************************************************|\
+===============================================================|\
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~|\
+--------------------------------------------------------------!\
+";
+
 static const std::string TEST_MESSAGE = 
 "|Lorem ipsum dolor sit amet, consectetur adipiscing elit. Phasellus \
 eget ex iaculis, imperdiet sem sit amet, efficitur urna. Curabitur \
@@ -25,22 +32,16 @@ rhoncus maximus lectus, ac venenatis urna pretium non.Sed luctus \
 pellentesque purus vel ornare.Mauris elit metus, lacinia vel sem vel, \
 porttitor interdum ipsum.Sed sit amet ante nec ipsum ultricies \
 tristique vitae quis neque.Aenean felis enim, facilisis et sem amet.|";
-/*= "\
-!**************************************************************|\
-===============================================================|\
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~|\
---------------------------------------------------------------!\
-";*/
 
 
 // Validates the test message received with the test message in the system
-bool ValidateMessageReceived(char * message, int size)
+bool ValidateMessageReceived(const std::string& test, char * message, int size)
 {
 	bool isDataValid;
 
 	// Check Validity of Data received
-	isDataValid = static_cast<int>(TEST_MESSAGE.length() + 1) == size;
-	isDataValid = isDataValid && (TEST_MESSAGE.compare(message) == 0);
+	isDataValid = static_cast<int>(test.length() + 1) == size;
+	isDataValid = isDataValid && (test.compare(message) == 0);
 	return isDataValid;
 }
 

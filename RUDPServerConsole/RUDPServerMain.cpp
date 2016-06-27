@@ -71,7 +71,7 @@ int __cdecl main()
 			}
 
 			std::string message(recvbuf, bytesReceived);
-			printf("%s\n", message.c_str());
+			printf("%s\n\n", message.c_str());
 
 			printf("waiting on port %s\n", DEFAULT_SERVER_PORT);
 		}

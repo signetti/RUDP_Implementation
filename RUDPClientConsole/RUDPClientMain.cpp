@@ -78,7 +78,7 @@ int __cdecl main()
 		}
 		else
 		{
-			printf("%s\n", TEST_MESSAGE.c_str());
+			printf("%s\n\n", TEST_MESSAGE.c_str());
 		}
 
 

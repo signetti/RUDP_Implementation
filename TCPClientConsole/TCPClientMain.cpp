@@ -33,13 +33,13 @@ int __cdecl main()
 	do
 	{
 		// Check Validity of Test Message received
-		isDataValid = ValidateMessageReceived(recvbuf, bytesReceived);
+		isDataValid = ValidateMessageReceived(TEST_MESSAGE_SMALL, recvbuf, bytesReceived);
 
 		if (isDataValid)
 		{
 			// Server's Test Message is Valid!
 			// Send this application's Test Message to Server
-			server.Send(TEST_MESSAGE.c_str());
+			server.Send(TEST_MESSAGE_SMALL.c_str());
 
 			// Get response from Server
 			bytesReceived = server.Receive(recvbuf, recvbuflen);
@@ -84,7 +84,7 @@ int __cdecl main()
 		// Time the sending of the message to the server
 		{
 			StopWatch<std::chrono::microseconds> time(record);
-			server.Send(TEST_MESSAGE.c_str());
+			server.Send(TEST_MESSAGE_SMALL.c_str());
 		}
 
 		// Time the echo of the message from the server
@@ -101,7 +101,7 @@ int __cdecl main()
 		}
 
 		// Check Validity of Data received
-		isDataValid = ValidateMessageReceived(recvbuf, bytesReceived);
+		isDataValid = ValidateMessageReceived(TEST_MESSAGE_SMALL, recvbuf, bytesReceived);
 
 		// Test Complete, Store / Print Results
 		if (bytesReceived > 0)
