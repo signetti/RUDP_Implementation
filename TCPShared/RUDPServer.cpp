@@ -302,7 +302,7 @@ bool RUDPServer::Listen()
 				seqNum = rand();
 				ackNum = data.Sequence() + 1U;
 
-				std::vector<uint8_t> acknowledgePacket = RPacket::SerializeInstance(seqNum, ackNum, 0, std::vector<uint8_t>());
+				std::vector<uint8_t> acknowledgePacket = RPacket::SerializeInstance(seqNum, ackNum, 0, 0, 0, std::vector<uint8_t>());
 
 				bytesSent = sendto(mClientSocket, reinterpret_cast<char *>(acknowledgePacket.data()), static_cast<int>(acknowledgePacket.size()), 0, &fromAddress, ADDR_LEN);
 				if (bytesSent < 0)
@@ -343,7 +343,7 @@ bool RUDPServer::Listen()
 					//, (uint8_t)(ackInfo.addr.sa_data[6]), (uint8_t)(ackInfo.addr.sa_data[7]), (uint8_t)(ackInfo.addr.sa_data[8]), (uint8_t)(ackInfo.addr.sa_data[9]));
 
 					// Create the Acknowledgement Packet
-					std::vector<uint8_t> acknowledgePacket = RPacket::SerializeInstance(ackInfo.seqNumSent, ackInfo.ackNumRecvd, 0, std::vector<uint8_t>());
+					std::vector<uint8_t> acknowledgePacket = RPacket::SerializeInstance(ackInfo.seqNumSent, ackInfo.ackNumRecvd, 0, 0, 0, std::vector<uint8_t>());
 
 					// Send the Acknowledgement Packet
 					bytesSent = sendto(mClientSocket, reinterpret_cast<char *>(acknowledgePacket.data()), static_cast<int>(acknowledgePacket.size()), 0, &ackInfo.addr, ADDR_LEN);

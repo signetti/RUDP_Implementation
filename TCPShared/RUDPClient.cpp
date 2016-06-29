@@ -27,7 +27,7 @@ RUDPStream RUDPClient::Connect(const SOCKET & serverSocket, const sockaddr & ser
 	uint32_t seqNum = rand();
 
 	// Generate Request Packet
-	std::vector<uint8_t> acknowledgePacket = RPacket::SerializeInstance(seqNum, 0, 0, std::vector<uint8_t>());
+	std::vector<uint8_t> acknowledgePacket = RPacket::SerializeInstance(seqNum, 0, 0, 0, 0, std::vector<uint8_t>());
 
 	// Begin Establishing Connection
 	RPacket data;
@@ -117,7 +117,7 @@ RUDPStream RUDPClient::Connect(const SOCKET & serverSocket, const sockaddr & ser
 	// Send Acknowledgement to Complete Three-Way Handshake
 	seqNum += 1;
 	uint32_t ackNum = data.Sequence() + 1;
-	acknowledgePacket = RPacket::SerializeInstance(seqNum, ackNum, 0, std::vector<uint8_t>());
+	acknowledgePacket = RPacket::SerializeInstance(seqNum, ackNum, 0, 0, 0, std::vector<uint8_t>());
 
 	bytesSent = sendto(serverSocket, reinterpret_cast<char *>(acknowledgePacket.data()), static_cast<int>(acknowledgePacket.size()), 0, &serverAddress, ADDR_LEN);
 	if (bytesSent < 0)

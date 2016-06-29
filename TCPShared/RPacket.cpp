@@ -16,16 +16,16 @@ std::vector<uint8_t> RPacket::CopyBytes(const uint8_t * buffer, const std::uint3
 
 RPacket::RPacket() : mId(0), mSeq(0), mAck(0), mAckBitfield(0), mBuffer() {}
 
-RPacket::RPacket(std::uint32_t seq, std::uint32_t ack, ackbitfield_t ack_bitfield, std::vector<uint8_t> vec_buffer)
-	: mId(RUDP_ID), mSeq(seq), mAck(ack), mAckBitfield(ack_bitfield), mBuffer(vec_buffer)
+RPacket::RPacket(std::uint32_t seq, std::uint32_t ack, ackbitfield_t ack_bitfield, std::uint32_t msg_id, std::uint32_t frag_count, std::vector<uint8_t> vec_buffer)
+	: mId(RUDP_ID), mSeq(seq), mAck(ack), mAckBitfield(ack_bitfield), mMessageId(msg_id), mFragmentCount(frag_count), mBuffer(vec_buffer)
 {}
 
-RPacket::RPacket(std::uint32_t seq, std::uint32_t ack, ackbitfield_t ack_bitfield, std::string message)
-	: mId(RUDP_ID), mSeq(seq), mAck(ack), mAckBitfield(ack_bitfield), mBuffer(message.begin(), message.end())
+RPacket::RPacket(std::uint32_t seq, std::uint32_t ack, ackbitfield_t ack_bitfield, std::uint32_t msg_id, std::uint32_t frag_count, std::string message)
+	: mId(RUDP_ID), mSeq(seq), mAck(ack), mAckBitfield(ack_bitfield), mMessageId(msg_id), mFragmentCount(frag_count), mBuffer(message.begin(), message.end())
 {}
 
-RPacket::RPacket(std::uint32_t seq, std::uint32_t ack, ackbitfield_t ack_bitfield, const uint8_t * data, std::int32_t sizeOfData)
-	: mId(RUDP_ID), mSeq(seq), mAck(ack), mAckBitfield(ack_bitfield), mBuffer(CopyBytes(data, sizeOfData))
+RPacket::RPacket(std::uint32_t seq, std::uint32_t ack, ackbitfield_t ack_bitfield, std::uint32_t msg_id, std::uint32_t frag_count, const uint8_t * data, std::int32_t sizeOfData)
+	: mId(RUDP_ID), mSeq(seq), mAck(ack), mAckBitfield(ack_bitfield), mMessageId(msg_id), mFragmentCount(frag_count), mBuffer(CopyBytes(data, sizeOfData))
 {}
 
 RPacket::RPacket(const Packet * packet) : mId(packet->prot_id())
@@ -35,30 +35,36 @@ RPacket::RPacket(const Packet * packet) : mId(packet->prot_id())
 
 RPacket::~RPacket() {}
 
-void RPacket::Initialize(std::uint32_t seq, std::uint32_t ack, ackbitfield_t ack_bitfield, std::vector<uint8_t> buffer)
+void RPacket::Initialize(std::uint32_t seq, std::uint32_t ack, ackbitfield_t ack_bitfield, std::uint32_t msg_id, std::uint32_t frag_count, std::vector<uint8_t> buffer)
 {
 	mId = RUDP_ID;
 	mSeq = seq;
 	mAck = ack;
 	mAckBitfield = ack_bitfield;
+	mMessageId = msg_id;
+	mFragmentCount = frag_count;
 	mBuffer = buffer;
 }
 
-void RPacket::Initialize(std::uint32_t seq, std::uint32_t ack, ackbitfield_t ack_bitfield, std::string message)
+void RPacket::Initialize(std::uint32_t seq, std::uint32_t ack, ackbitfield_t ack_bitfield, std::uint32_t msg_id, std::uint32_t frag_count, std::string message)
 {
 	mId = RUDP_ID;
 	mSeq = seq;
 	mAck = ack;
 	mAckBitfield = ack_bitfield;
+	mMessageId = msg_id;
+	mFragmentCount = frag_count;
 	mBuffer = std::vector<uint8_t>(message.begin(), message.end());
 }
 
-void RPacket::Initialize(std::uint32_t seq, std::uint32_t ack, ackbitfield_t ack_bitfield, const uint8_t * data, std::int32_t sizeOfData)
+void RPacket::Initialize(std::uint32_t seq, std::uint32_t ack, ackbitfield_t ack_bitfield, std::uint32_t msg_id, std::uint32_t frag_count, const uint8_t * data, std::int32_t sizeOfData)
 {
 	mId = RUDP_ID;
 	mSeq = seq;
 	mAck = ack;
 	mAckBitfield = ack_bitfield;
+	mMessageId = msg_id;
+	mFragmentCount = frag_count;
 	mBuffer = CopyBytes(data, sizeOfData);
 }
 
@@ -87,6 +93,16 @@ ackbitfield_t RPacket::AckBitfield() const
 	return mAckBitfield;
 }
 
+std::uint32_t RPacket::MessageId() const
+{
+	return mMessageId;
+}
+
+std::uint32_t RPacket::FragmentCount() const
+{
+	return mFragmentCount;
+}
+
 std::vector<uint8_t> RPacket::Buffer() const
 {
 	return mBuffer;
@@ -99,7 +115,7 @@ std::string RPacket::Message() const
 
 std::vector<uint8_t> RPacket::Serialize() const
 {
-	return SerializeInstance(mId, mSeq, mAck, mAckBitfield.bitfield, mBuffer);
+	return SerializeInstance(mId, mSeq, mAck, mAckBitfield.bitfield, mMessageId, mBuffer);
 }
 
 void RPacket::BecomeBadPacket()
@@ -126,6 +142,8 @@ bool RPacket::Deserialize(uint8_t * buffer)
 		mSeq = packet->sequence();
 		mAck = packet->ack();
 		mAckBitfield = packet->ack_bitfield();
+		mMessageId = packet->message_id();
+		mFragmentCount = packet->fragment_count();
 
 		mBuffer = CopyBytes(packet->buffer()->data(), static_cast<int32_t>(packet->buffer()->size()));
 		return true;
@@ -133,7 +151,7 @@ bool RPacket::Deserialize(uint8_t * buffer)
 	return false;
 }
 
-std::vector<uint8_t> RPacket::SerializeInstance(std::uint32_t id, std::uint32_t seq, std::uint32_t ack, std::uint32_t ack_bitfield, std::vector<uint8_t> buffer)
+std::vector<uint8_t> RPacket::SerializeInstance(std::uint32_t id, std::uint32_t seq, std::uint32_t ack, std::uint32_t ack_bitfield, std::uint32_t msg_id, std::uint32_t frag_count, std::vector<uint8_t> buffer)
 {
 	uint8_t * packet_serialized;
 	uint32_t packet_size;
@@ -141,7 +159,7 @@ std::vector<uint8_t> RPacket::SerializeInstance(std::uint32_t id, std::uint32_t 
 	flatbuffers::FlatBufferBuilder builder;
 
 	auto bufferF = builder.CreateVector(buffer);
-	auto packet = CreatePacket(builder, id, seq, ack, ack_bitfield, static_cast<uint32_t>(buffer.size()), bufferF);
+	auto packet = CreatePacket(builder, id, seq, ack, ack_bitfield, msg_id, frag_count, bufferF);
 
 	builder.Finish(packet);
 
@@ -151,14 +169,14 @@ std::vector<uint8_t> RPacket::SerializeInstance(std::uint32_t id, std::uint32_t 
 	return CopyBytes(packet_serialized, packet_size);
 }
 
-std::vector<uint8_t> RPacket::SerializeInstance(std::uint32_t seq, std::uint32_t ack, std::uint32_t ack_bitfield, std::vector<uint8_t> buffer)
+std::vector<uint8_t> RPacket::SerializeInstance(std::uint32_t seq, std::uint32_t ack, std::uint32_t ack_bitfield, std::uint32_t msg_id, std::uint32_t frag_count, std::vector<uint8_t> buffer)
 {
-	return SerializeInstance(RUDP_ID, seq, ack, ack_bitfield, buffer);
+	return SerializeInstance(RUDP_ID, seq, ack, ack_bitfield, frag_count, msg_id, buffer);
 }
 
-std::vector<uint8_t> RPacket::SerializeInstance(std::uint32_t seq, std::uint32_t ack, std::uint32_t ack_bitfield, const uint8_t * buffer, uint32_t bufferSize)
+std::vector<uint8_t> RPacket::SerializeInstance(std::uint32_t seq, std::uint32_t ack, std::uint32_t ack_bitfield, std::uint32_t msg_id, std::uint32_t frag_count, const uint8_t * buffer, uint32_t bufferSize)
 {
-	return SerializeInstance(seq, ack, ack_bitfield, CopyBytes(buffer, bufferSize));
+	return SerializeInstance(seq, ack, ack_bitfield, msg_id, frag_count, CopyBytes(buffer, bufferSize));
 }
 
 RPacket * RPacket::DeserializeInstance(std::vector<uint8_t> byte_buffer)

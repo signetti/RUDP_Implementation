@@ -7,7 +7,8 @@ table Packet {
   sequence:uint;
   ack:uint;
   ack_bitfield:uint;
-  buffer_size:uint;
+  message_id:uint;
+  fragment_count:uint;
   buffer:[ubyte];
 }
 

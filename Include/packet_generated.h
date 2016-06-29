@@ -13,14 +13,16 @@ struct Packet FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
     VT_SEQUENCE = 6,
     VT_ACK = 8,
     VT_ACK_BITFIELD = 10,
-    VT_BUFFER_SIZE = 12,
-    VT_BUFFER = 14
+    VT_MESSAGE_ID = 12,
+    VT_FRAGMENT_COUNT = 14,
+    VT_BUFFER = 16
   };
   uint32_t prot_id() const { return GetField<uint32_t>(VT_PROT_ID, 0); }
   uint32_t sequence() const { return GetField<uint32_t>(VT_SEQUENCE, 0); }
   uint32_t ack() const { return GetField<uint32_t>(VT_ACK, 0); }
   uint32_t ack_bitfield() const { return GetField<uint32_t>(VT_ACK_BITFIELD, 0); }
-  uint32_t buffer_size() const { return GetField<uint32_t>(VT_BUFFER_SIZE, 0); }
+  uint32_t message_id() const { return GetField<uint32_t>(VT_MESSAGE_ID, 0); }
+  uint32_t fragment_count() const { return GetField<uint32_t>(VT_FRAGMENT_COUNT, 0); }
   const flatbuffers::Vector<uint8_t> *buffer() const { return GetPointer<const flatbuffers::Vector<uint8_t> *>(VT_BUFFER); }
   bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
@@ -28,7 +30,8 @@ struct Packet FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
            VerifyField<uint32_t>(verifier, VT_SEQUENCE) &&
            VerifyField<uint32_t>(verifier, VT_ACK) &&
            VerifyField<uint32_t>(verifier, VT_ACK_BITFIELD) &&
-           VerifyField<uint32_t>(verifier, VT_BUFFER_SIZE) &&
+           VerifyField<uint32_t>(verifier, VT_MESSAGE_ID) &&
+           VerifyField<uint32_t>(verifier, VT_FRAGMENT_COUNT) &&
            VerifyField<flatbuffers::uoffset_t>(verifier, VT_BUFFER) &&
            verifier.Verify(buffer()) &&
            verifier.EndTable();
@@ -42,12 +45,13 @@ struct PacketBuilder {
   void add_sequence(uint32_t sequence) { fbb_.AddElement<uint32_t>(Packet::VT_SEQUENCE, sequence, 0); }
   void add_ack(uint32_t ack) { fbb_.AddElement<uint32_t>(Packet::VT_ACK, ack, 0); }
   void add_ack_bitfield(uint32_t ack_bitfield) { fbb_.AddElement<uint32_t>(Packet::VT_ACK_BITFIELD, ack_bitfield, 0); }
-  void add_buffer_size(uint32_t buffer_size) { fbb_.AddElement<uint32_t>(Packet::VT_BUFFER_SIZE, buffer_size, 0); }
+  void add_message_id(uint32_t message_id) { fbb_.AddElement<uint32_t>(Packet::VT_MESSAGE_ID, message_id, 0); }
+  void add_fragment_count(uint32_t fragment_count) { fbb_.AddElement<uint32_t>(Packet::VT_FRAGMENT_COUNT, fragment_count, 0); }
   void add_buffer(flatbuffers::Offset<flatbuffers::Vector<uint8_t>> buffer) { fbb_.AddOffset(Packet::VT_BUFFER, buffer); }
   PacketBuilder(flatbuffers::FlatBufferBuilder &_fbb) : fbb_(_fbb) { start_ = fbb_.StartTable(); }
   PacketBuilder &operator=(const PacketBuilder &);
   flatbuffers::Offset<Packet> Finish() {
-    auto o = flatbuffers::Offset<Packet>(fbb_.EndTable(start_, 6));
+    auto o = flatbuffers::Offset<Packet>(fbb_.EndTable(start_, 7));
     return o;
   }
 };
@@ -57,11 +61,13 @@ inline flatbuffers::Offset<Packet> CreatePacket(flatbuffers::FlatBufferBuilder &
    uint32_t sequence = 0,
    uint32_t ack = 0,
    uint32_t ack_bitfield = 0,
-   uint32_t buffer_size = 0,
+   uint32_t message_id = 0,
+   uint32_t fragment_count = 0,
    flatbuffers::Offset<flatbuffers::Vector<uint8_t>> buffer = 0) {
   PacketBuilder builder_(_fbb);
   builder_.add_buffer(buffer);
-  builder_.add_buffer_size(buffer_size);
+  builder_.add_fragment_count(fragment_count);
+  builder_.add_message_id(message_id);
   builder_.add_ack_bitfield(ack_bitfield);
   builder_.add_ack(ack);
   builder_.add_sequence(sequence);

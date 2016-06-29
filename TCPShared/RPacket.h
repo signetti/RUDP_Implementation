@@ -167,23 +167,28 @@ private:
 	std::uint32_t mAck;
 	// The acknowledgement bit-field, used to hint to the recipient of the previous 32 packets acknowledged
 	ackbitfield_t mAckBitfield;
+	// The message identification number, which will now be passed to start at zero
+	std::uint32_t mMessageId;
+	// The message identification number, which will now be passed to start at zero
+	std::uint32_t mFragmentCount;
 	// The data stored in the packet, represented as an array of bytes
 	std::vector<uint8_t> mBuffer;
 
 	// Transforms the FlatBuffer's vector into the STL's vector
-	static std::vector<uint8_t> CopyBytes(flatbuffers::Vector<uint8_t> buffer);
+	//static std::vector<uint8_t> CopyBytes(flatbuffers::Vector<uint8_t> buffer);
 	// Transforms a pointer to an array of bytes into the STL's vector
 	static std::vector<uint8_t> CopyBytes(const uint8_t * buffer, std::uint32_t size);
 
 	// Private version of the public SerializeInstance(), with the difference of assigning an ID other than the RUDP-ID to be serialized
-	static std::vector<uint8_t> SerializeInstance(std::uint32_t id, std::uint32_t seq,
-		std::uint32_t ack, std::uint32_t ack_bitfield, std::vector<uint8_t> buffer);
+	static std::vector<uint8_t> SerializeInstance(std::uint32_t id, std::uint32_t seq, std::uint32_t ack
+		, std::uint32_t ack_bitfield, std::uint32_t msg_id, std::uint32_t frag_count, std::vector<uint8_t> buffer);
 
 	// Private constructor to convert Flatbuffer's Packet protocol into an RPacket instance
 	RPacket(const Packet * packet);
 public:
 	// The RUDP's Official Identification number, used to determine if the packet is indeed an RUDP Packet
 	static const std::uint32_t RUDP_ID = 0xABCD;
+	static const std::uint32_t NumberOfAcksPerPacket = 33U;
 	
 	/*	RPacket default constructor, intended to immediately Deserialize() data or Initialize() after instantiation.
 	 *	@note	The id for this instance will be an invalid id (not RUDP ID) if not deserialized or initialized before use
@@ -195,14 +200,14 @@ public:
 	 *	@param	ack_bitfield	Acknowledgement bitfield
 	 *	@param	buffer			The data this packet will hold
 	 */
-	RPacket(std::uint32_t seq, std::uint32_t ack, ackbitfield_t ack_bitfield, std::vector<uint8_t> buffer);
+	RPacket(std::uint32_t seq, std::uint32_t ack, ackbitfield_t ack_bitfield, std::uint32_t msg_id, std::uint32_t frag_count, std::vector<uint8_t> buffer);
 	/*	RPacket constructor
 	*	@param	seq				Sequence number
 	*	@param	ack				Acknowledgement number
 	*	@param	ack_bitfield	Acknowledgement bitfield
 	*	@param	message			The message this packet will hold
 	*/
-	RPacket(std::uint32_t seq, std::uint32_t ack, ackbitfield_t ack_bitfield, std::string message);
+	RPacket(std::uint32_t seq, std::uint32_t ack, ackbitfield_t ack_bitfield, std::uint32_t msg_id, std::uint32_t frag_count, std::string message);
 	/*	RPacket constructor
 	*	@param	seq				Sequence number
 	*	@param	ack				Acknowledgement number
@@ -210,7 +215,7 @@ public:
 	*	@param	data			The data this packet will hold
 	*	@param	sizeOfData		The amount of bytes in the data
 	*/
-	RPacket(std::uint32_t seq, std::uint32_t ack, ackbitfield_t ack_bitfield, const uint8_t * data, std::int32_t sizeOfData);
+	RPacket(std::uint32_t seq, std::uint32_t ack, ackbitfield_t ack_bitfield, std::uint32_t msg_id, std::uint32_t frag_count, const uint8_t * data, std::int32_t sizeOfData);
 	/*	RPacket destructor
 	 */
 	~RPacket();
@@ -221,14 +226,14 @@ public:
 	*	@param	ack_bitfield	Acknowledgement bitfield
 	*	@param	buffer			The data this packet will hold
 	*/
-	void Initialize(std::uint32_t seq, std::uint32_t ack, ackbitfield_t ack_bitfield, std::vector<uint8_t> buffer);
+	void Initialize(std::uint32_t seq, std::uint32_t ack, ackbitfield_t ack_bitfield, std::uint32_t msg_id, std::uint32_t frag_count, std::vector<uint8_t> buffer);
 	/*	Initialize over the RPacket (equivalent to its constructor-counterpart)
 	*	@param	seq				Sequence number
 	*	@param	ack				Acknowledgement number
 	*	@param	ack_bitfield	Acknowledgement bitfield
 	*	@param	message			The message this packet will hold
 	*/
-	void Initialize(std::uint32_t seq, std::uint32_t ack, ackbitfield_t ack_bitfield, std::string message);
+	void Initialize(std::uint32_t seq, std::uint32_t ack, ackbitfield_t ack_bitfield, std::uint32_t msg_id, std::uint32_t frag_count, std::string message);
 	/*	Initialize over the RPacket (equivalent to its constructor-counterpart)
 	*	@param	seq				Sequence number
 	*	@param	ack				Acknowledgement number
@@ -236,7 +241,7 @@ public:
 	*	@param	data			The data this packet will hold
 	*	@param	sizeOfData		The amount of bytes in the data
 	*/
-	void Initialize(std::uint32_t seq, std::uint32_t ack, ackbitfield_t ack_bitfield, const uint8_t * data, std::int32_t sizeOfData);
+	void Initialize(std::uint32_t seq, std::uint32_t ack, ackbitfield_t ack_bitfield, std::uint32_t msg_id, std::uint32_t frag_count, const uint8_t * data, std::int32_t sizeOfData);
 
 	/*	Checks to see if what is deserialized is an RUDP Packet
 	*	@return	returns true if the packet is bad (id does not match RUDP ID), false otherwise
@@ -248,6 +253,8 @@ public:
 	std::uint32_t Sequence() const;
 	std::uint32_t Ack() const;
 	ackbitfield_t AckBitfield() const;
+	std::uint32_t MessageId() const;
+	std::uint32_t FragmentCount() const;
 	std::vector<uint8_t> Buffer() const;
 	std::string Message() const;
 
@@ -282,7 +289,7 @@ public:
 	 *	@param	buffer			The data this packet will hold
 	 *	@return	returns the byte-array representation of the RUDP Packet
 	 */
-	static std::vector<uint8_t> SerializeInstance(std::uint32_t seq, std::uint32_t ack, std::uint32_t ack_bitfield, std::vector<uint8_t> buffer);
+	static std::vector<uint8_t> SerializeInstance(std::uint32_t seq, std::uint32_t ack, std::uint32_t ack_bitfield, std::uint32_t msg_id, std::uint32_t frag_count, std::vector<uint8_t> buffer);
 
 	/*	Serialize the data directly into the RUDP Packet's byte-array representation, without creating an instance.
 	*	@note	Equivalent to <pre><code>RPacket(...).Serialize();</code></pre>
@@ -293,7 +300,7 @@ public:
 	*	@param	bufferSize		The amount of bytes in the data
 	*	@return	returns the byte-array representation of the RUDP Packet
 	*/
-	static std::vector<uint8_t> SerializeInstance(std::uint32_t seq, std::uint32_t ack, std::uint32_t ack_bitfield, const uint8_t * buffer, uint32_t bufferSize);
+	static std::vector<uint8_t> SerializeInstance(std::uint32_t seq, std::uint32_t ack, std::uint32_t ack_bitfield, std::uint32_t msg_id, std::uint32_t frag_count, const uint8_t * buffer, uint32_t bufferSize);
 
 	/*	Deserialize the byte-array into a new instance.
 	 *	@note	Equivalent to <pre><code>new RPacket().Deserialize(...);</code></pre>
