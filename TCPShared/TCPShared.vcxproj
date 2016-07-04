@@ -161,6 +161,7 @@
     <Text Include="ReadMe.txt" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="ConfigReader.h" />
     <ClInclude Include="RPacket.h" />
     <ClInclude Include="RUDPClient.h" />
     <ClInclude Include="RUDPServer.h" />
@@ -175,6 +176,7 @@
     <ClInclude Include="WSAManager.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="ConfigReader.cpp" />
     <ClCompile Include="RPacket.cpp" />
     <ClCompile Include="RUDPClient.cpp" />
     <ClCompile Include="RUDPServer.cpp" />

@@ -13,19 +13,29 @@
 #include "RUDPStream.h"
 #include "RUDPClient.h"
 
+#include "ConfigReader.h"
+
 #include <assert.h>
 int BP(int condition)
 {
+	getchar();
 	return condition;
 }
 
 int __cdecl main()
 {
+	std::vector<std::string> configLines = ConfigReader::ReadFile("../Content/config.txt");
+	if (configLines.empty())
+	{
+		return BP(0);
+	}
+	const char * server_ip = configLines[0].c_str();
+
 	// Re-seed
 	srand(static_cast<unsigned int>(time(0)));
 
 	// ===================== Begin Connection to Server =====================
-	RUDPStream server = RUDPClient::ConnectToServer(DEFAULT_IP, DEFAULT_SERVER_PORT, DEFAULT_CLIENT_PORT, 1500);
+	RUDPStream server = RUDPClient::ConnectToServer(server_ip, DEFAULT_SERVER_PORT, DEFAULT_CLIENT_PORT, 1500);
 
 	if (server.IsOpen() == false)
 	{

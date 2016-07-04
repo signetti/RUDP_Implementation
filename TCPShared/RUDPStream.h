@@ -4,6 +4,8 @@
 #include <chrono>
 #include <assert.h>
 
+class RPacket;
+
 template <typename T, uint32_t QueueSize>
 class CircularQueue
 {
@@ -11,12 +13,14 @@ private:
 	T mQueue[QueueSize];
 	std::uint32_t mEndIndex;
 	std::uint32_t mSize;
+	std::uint32_t mQueueSize;
 
 public:
 	static const uint32_t MaximumQueueSize = QueueSize;
 
 	CircularQueue() : mEndIndex(0), mSize(0) {}
 
+	// Return the object at the given index, where 0 is the oldest pushed in the queue.
 	T& operator[](uint32_t index)
 	{
 		// Check for valid index
@@ -29,7 +33,7 @@ public:
 		// Access proper Index
 		return mQueue[properIndex];
 	}
-	const T& operator[](uint32_t index) const { return (*this)[index]; }
+	const T& operator[](uint32_t index) const { return const_cast<CircularQueue*>(this)->operator[](index); }
 
 	T& Top(const uint32_t& offsetFromEnd = 0U) 
 	{
@@ -40,7 +44,7 @@ public:
 		uint32_t lastIndex = ((QueueSize + (mEndIndex - offsetFromEnd - 1)) % QueueSize);
 		return mQueue[mEndIndex - 1];
 	}
-	const T& Top() const { return mQueue[mEndIndex - 1]; }
+	const T& Top(const uint32_t& offsetFromEnd = 0U) const { return const_cast<CircularQueue*>(this)->Top(offsetFromEnd); }
 
 	bool Pop()
 	{
@@ -59,6 +63,8 @@ public:
 			T popped = mQueue[mEndIndex];
 
 			--mSize;
+
+			return popped;
 		}
 	}
 
@@ -106,20 +112,65 @@ public:
 class RUDPStream
 {
 protected:
+	/*============================= PACKET FRAME ===================================*/
 	struct PacketFrame
 	{
 		uint32_t SequenceNumber;
 		const uint8_t * DataPointer;
 		uint32_t SizeOfData;
-		//bool IsAcknowledged;
+		bool IsAcknowledged;
+		bool IsDataCloned;
 
-		PacketFrame() : SequenceNumber(0), DataPointer(nullptr), SizeOfData(0)/*, IsAcknowledged(false)*/ {}
-		void Reassign(uint32_t newSequenceNumber, const uint8_t * newDataPointer, uint32_t newSizeOfData/*, bool updateIsAcknowledged = false*/)
+		PacketFrame() : SequenceNumber(0), DataPointer(nullptr), SizeOfData(0), IsAcknowledged(false), IsDataCloned(false) {}
+		~PacketFrame()
+		{	// Free memory
+			if (IsDataCloned && DataPointer != nullptr)
+			{
+				free(const_cast<uint8_t*>(DataPointer));
+			}
+		}
+
+		// Assign Packet Frame as Bad
+		void Reassign(uint32_t newSequenceNumber)
 		{
+			Reassign(newSequenceNumber, nullptr, 0, false);
+		}
+
+		// Assign Packet Frame, with the data signature
+		void Reassign(uint32_t newSequenceNumber, const uint8_t * newDataPointer, uint32_t newSizeOfData, bool acknowledgement)
+		{
+			// Free memory
+			if (IsDataCloned && DataPointer != nullptr)
+			{
+				free(const_cast<uint8_t*>(DataPointer));
+			}
+
 			SequenceNumber = newSequenceNumber;
 			DataPointer = newDataPointer;
 			SizeOfData = newSizeOfData;
-			//IsAcknowledged = updateIsAcknowledged;
+			IsAcknowledged = acknowledgement;
+			IsDataCloned = false;
+		}
+
+		// Assign Packet Frame, with the data signature (that needs to be copied over)
+		void Reassign(uint32_t newSequenceNumber, const std::vector<uint8_t>& newData, bool acknowledgement)
+		{
+			// Free memory
+			if (IsDataCloned && DataPointer != nullptr)
+			{
+				free(const_cast<uint8_t*>(DataPointer));
+			}
+
+			// Transfer memory over to DataPointer
+			SizeOfData = newData.size();
+			uint8_t * clone = reinterpret_cast<uint8_t *>(malloc(SizeOfData));
+			memcpy(clone, newData.data(), static_cast<size_t>(SizeOfData));
+
+			// Initialize Frame
+			SequenceNumber = newSequenceNumber;
+			DataPointer = clone;
+			IsAcknowledged = acknowledgement;
+			IsDataCloned = true;
 		}
 	};
 	/*
@@ -150,8 +201,10 @@ protected:
 		friend SequenceNumber operator<(SequenceNumber lhs, const SequenceNumber& rhs) { lhs += rhs; return lhs; }
 	};*/
 
-	typedef CircularQueue<PacketFrame, 33> SlidingWindow;
+	typedef CircularQueue<PacketFrame, RPacket::NumberOfAcksPerPacket> SlidingWindow;
 	typedef uint32_t seq_num_t;
+
+
 //protected:
 public:
 	// The Maximum Transmission Unit of the average router
@@ -182,14 +235,15 @@ public:
 	// Last time captured since receiving any data from the remote client
 	std::chrono::high_resolution_clock::time_point mLastConnectionTime;
 	// Data to store in the packet
-	char * mBuffer;
+	uint8_t * mBuffer;
 
+	/*============================= Sequence Number Wrap Around Functions ===================================*/
 	constexpr static const seq_num_t MaximumSequenceNumberValue = ~(seq_num_t(0U));
 	static bool IsSeq2MoreRecent(seq_num_t seq1, seq_num_t seq2)
 	{
 		return ((seq1 > seq2) && (seq1 - seq2 <= MaximumSequenceNumberValue / 2)) || ((seq2 > seq1) && (seq2 - seq1  > MaximumSequenceNumberValue / 2));
 	}
-	static int32_t diffFromSeq1ToSeq2(seq_num_t seq1, seq_num_t seq2)
+	static int32_t DiffFromSeq1ToSeq2(seq_num_t seq1, seq_num_t seq2)
 	{
 		uint32_t diff;
 		if (seq1 > seq2)
@@ -238,44 +292,50 @@ public:
 		}*/
 	}
 
+	/*============================= Send / Receive Helpers ===================================*/
+	bool IsConnectionTimeOut(std::chrono::high_resolution_clock::time_point startTime, uint32_t maxTimeOutMS);
+	bool ReceiveRPacket(RPacket& OutPacket, uint32_t maxTimeOutMS = 10000U);
+	bool SendRPacket(const RPacket& packet);
 public:
+
+	/*============================= RUDP Stream ===================================*/
 	/**
-	*	TCPStream Constructor
+	*	RUDPStream Constructor
 	*	@param	socket		The socket with which the stream is established
 	*/
 	explicit RUDPStream(const SOCKET& socket, const struct sockaddr& toAddress
 		, const uint32_t& senderSequenceNumber, const uint32_t& receiverSequenceNumber, uint32_t maxConnectionTimeOut = 2000);
 
 	/**
-	*	TCPStream Constructor for receiving RUDP Connections only
+	*	RUDPStream Constructor for receiving RUDP Connections only
 	*	@param	socket		The socket with which the stream is established
 	*/
 	explicit RUDPStream(const SOCKET& socket);
 	/**
-	*	TCPStream Destructor
+	*	RUDPStream Destructor
 	*/
 	virtual ~RUDPStream();
 
 	/**
-	*	Copy semantics for TCPStream
+	*	Copy semantics for RUDPStream
 	*	@param	other	The TCPStream being copied to this instance
 	*/
 	RUDPStream(const RUDPStream& other);
 	/**
-	*	Copy semantics for TCPStream
-	*	@param	rhs		The TCPStream being copied to this instance
+	*	Copy semantics for RUDPStream
+	*	@param	rhs		The RUDPStream being copied to this instance
 	*	@return	returns a self reference
 	*/
 	virtual RUDPStream& operator=(const RUDPStream& rhs);
 
 	/**
-	*	Move semantics for TCPStream
-	*	@param	other	The TCPStream being moved to this instance
+	*	Move semantics for RUDPStream
+	*	@param	other	The RUDPStream being moved to this instance
 	*/
 	RUDPStream(RUDPStream&& other);
 	/**
-	*	Move semantics for TCPStream
-	*	@param	rhs		The TCPStream being moved to this instance
+	*	Move semantics for RUDPStream
+	*	@param	rhs		The RUDPStream being moved to this instance
 	*	@return	returns a self reference
 	*/
 	virtual RUDPStream& operator=(RUDPStream&& rhs);

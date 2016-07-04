@@ -5,16 +5,26 @@
 #include <iostream>
 #include <fstream>
 
+#include "ConfigReader.h"
+
 #include <assert.h>
 int BP(int condition)
 {
+	getchar();
 	return condition;
 }
 
 int __cdecl main()
 {
+	std::vector<std::string> configLines = ConfigReader::ReadFile("../Content/config.txt");
+	if (configLines.empty())
+	{
+		return BP(0);
+	}
+	const char * server_ip = configLines[0].c_str();
+
 	// ===================== Begin Connection to Server =====================
-	TCPStream server = TCPClient::ConnectToServer(DEFAULT_IP, DEFAULT_SERVER_PORT);
+	TCPStream server = TCPClient::ConnectToServer(server_ip, DEFAULT_SERVER_PORT);
 
 	// Notify that connection is reached
 	printf("Client-Server Connection Established.");

@@ -36,7 +36,7 @@ SOCKET TCPClient::GetServerSocket(struct addrinfo * info)
 	return serverSocket;
 }
 
-SOCKET TCPClient::InitializeClient(char * ip, char * port)
+SOCKET TCPClient::InitializeClient(const char * ip, char * port)
 {
 	struct addrinfo hints;
 	struct addrinfo * info;
@@ -63,7 +63,7 @@ SOCKET TCPClient::InitializeClient(char * ip, char * port)
 	return serverSocket;
 }
 
-TCPStream TCPClient::ConnectToServer(char * ip, char * port)
+TCPStream TCPClient::ConnectToServer(const char * ip, char * port)
 {
 	WSAManager::StartUp();
 	return TCPStream(InitializeClient(ip, port));

@@ -103,7 +103,7 @@ std::uint32_t RPacket::FragmentCount() const
 	return mFragmentCount;
 }
 
-std::vector<uint8_t> RPacket::Buffer() const
+const std::vector<uint8_t>& RPacket::Buffer() const
 {
 	return mBuffer;
 }

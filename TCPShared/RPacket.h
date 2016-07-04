@@ -255,7 +255,7 @@ public:
 	ackbitfield_t AckBitfield() const;
 	std::uint32_t MessageId() const;
 	std::uint32_t FragmentCount() const;
-	std::vector<uint8_t> Buffer() const;
+	const std::vector<uint8_t>& Buffer() const;
 	std::string Message() const;
 
 	//	Make this packet a Bad Packet (for testing purposes only)

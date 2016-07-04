@@ -23,6 +23,6 @@ public:
 	*	@param	port	Server port number.
 	*	@return returns a TCPStream with an open socket connecting to the server. Returns an invalid stream if connection fails.
 	*/
-	static RUDPStream ConnectToServer(char * ip, char * port, char * clientPort, uint32_t maxConnectionTimeOut);
+	static RUDPStream ConnectToServer(const char * ip, char * port, char * clientPort, uint32_t maxConnectionTimeOut);
 };
 

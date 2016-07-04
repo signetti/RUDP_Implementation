@@ -67,6 +67,7 @@ int __cdecl main()
 			bytesReceived = client.Receive(recvbuf, DEFAULT_BUFLEN);
 			if (bytesReceived <= 0)
 			{
+				printf("wut");
 				continue;
 			}
 

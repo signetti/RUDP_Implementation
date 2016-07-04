@@ -133,7 +133,7 @@ RUDPStream RUDPClient::Connect(const SOCKET & serverSocket, const sockaddr & ser
 	//return RUDPStream(serverSocket, serverAddress, seqNum, ackNum, maxConnectionTimeOut);
 }
 
-RUDPStream RUDPClient::ConnectToServer(char * ip, char * port, char * clientPort, uint32_t maxConnectionTimeOut)
+RUDPStream RUDPClient::ConnectToServer(const char * ip, char * port, char * clientPort, uint32_t maxConnectionTimeOut)
 {
 	struct addrinfo hints;
 	struct addrinfo * info;

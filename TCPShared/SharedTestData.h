@@ -89,7 +89,7 @@ static const std::uint32_t DEFAULT_BUFLEN = 1200;//RoundUpToPowerOfTwo(TEST_MESS
 static uint32_t const DEFAULT_SERVER_PORT_NUMBER = 27015;
 static char * const DEFAULT_SERVER_PORT = "27015";
 static char * const DEFAULT_CLIENT_PORT = "27014";
-static char * const DEFAULT_IP = "10.8.3.35";
+//static char * const DEFAULT_IP = "10.8.3.35";
 //static char * const DEFAULT_IP = "127.0.0.1";
 //static char * const DEFAULT_IP = "192.168.0.4";
 
