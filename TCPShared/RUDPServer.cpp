@@ -420,7 +420,7 @@ RUDPStream * RUDPServer::Accept()
 
 	// Remove the created client socket from the accepted client socket
 	mAcceptedClients.pop_back();
-	RUDPStream * newClientStream = new RUDPStream(clientSocket, clientAddress, client.seqNumSent, client.ackNumRecvd, mMaxConnectionTimeOut);
+	RUDPStream * newClientStream = new RUDPStream(clientSocket, clientAddress, client.seqNumSent + 1, client.ackNumRecvd + 1, mMaxConnectionTimeOut);
 	mClients.push_back(newClientStream);
 	return newClientStream;
 }

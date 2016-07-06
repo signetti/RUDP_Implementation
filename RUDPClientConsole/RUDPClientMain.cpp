@@ -83,7 +83,7 @@ int __cdecl main()
 		bytesSent = server.Send(TEST_MESSAGE);
 		if (bytesSent < 0)
 		{
-			printf("Failed to send datagram");
+			printf("Failed to send datagram\n");
 			//return BP(1);
 		}
 		else

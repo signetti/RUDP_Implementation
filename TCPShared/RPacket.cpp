@@ -14,7 +14,7 @@ std::vector<uint8_t> RPacket::CopyBytes(const uint8_t * buffer, const std::uint3
 	return vec;
 }
 
-RPacket::RPacket() : mId(0), mSeq(0), mAck(0), mAckBitfield(0), mBuffer() {}
+RPacket::RPacket() : mId(0), mSeq(0), mAck(0), mAckBitfield(0U), mBuffer() {}
 
 RPacket::RPacket(std::uint32_t seq, std::uint32_t ack, ackbitfield_t ack_bitfield, std::uint32_t msg_id, std::uint32_t frag_count, std::vector<uint8_t> vec_buffer)
 	: mId(RUDP_ID), mSeq(seq), mAck(ack), mAckBitfield(ack_bitfield), mMessageId(msg_id), mFragmentCount(frag_count), mBuffer(vec_buffer)
@@ -115,7 +115,7 @@ std::string RPacket::Message() const
 
 std::vector<uint8_t> RPacket::Serialize() const
 {
-	return SerializeInstance(mId, mSeq, mAck, mAckBitfield.bitfield, mMessageId, mBuffer);
+	return SerializeInstance(mId, mSeq, mAck, mAckBitfield.bitfield, mMessageId, mFragmentCount, mBuffer);
 }
 
 void RPacket::BecomeBadPacket()

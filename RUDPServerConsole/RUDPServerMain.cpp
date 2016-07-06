@@ -51,7 +51,8 @@ int __cdecl main()
 
 
 	// Create Protocol ID
-	char recvbuf[DEFAULT_BUFLEN];
+	static const uint32_t BUF_SIZE = 12000;
+	char recvbuf[BUF_SIZE];
 
 	// Listen for incoming packets
 	int bytesReceived;
@@ -64,10 +65,10 @@ int __cdecl main()
 	{
 		// Receiving Packets
 		{
-			bytesReceived = client.Receive(recvbuf, DEFAULT_BUFLEN);
+			bytesReceived = client.Receive(recvbuf, BUF_SIZE);
 			if (bytesReceived <= 0)
 			{
-				printf("wut");
+				printf("wut\n");
 				continue;
 			}
 

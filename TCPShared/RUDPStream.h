@@ -4,7 +4,7 @@
 #include <chrono>
 #include <assert.h>
 
-class RPacket;
+#include "RPacket.h"
 
 template <typename T, uint32_t QueueSize>
 class CircularQueue
@@ -13,7 +13,7 @@ private:
 	T mQueue[QueueSize];
 	std::uint32_t mEndIndex;
 	std::uint32_t mSize;
-	std::uint32_t mQueueSize;
+	//std::uint32_t mQueueSize;
 
 public:
 	static const uint32_t MaximumQueueSize = QueueSize;
@@ -23,51 +23,62 @@ public:
 	// Return the object at the given index, where 0 is the oldest pushed in the queue.
 	T& operator[](uint32_t index)
 	{
-		// Check for valid index
-		if (index >= QueueSize)
+		if (index >= mSize)
 		{
 			throw std::exception("Index Out of Bound");
 		}
-		// Solve for proper index
-		uint32_t properIndex = (QueueSize + (mEndIndex - mSize) + index) % QueueSize;
-		// Access proper Index
-		return mQueue[properIndex];
+		uint32_t lastIndex = ((QueueSize + (mEndIndex - index - 1)) % QueueSize);
+		assert(lastIndex >= 0 && lastIndex < QueueSize);
+		return mQueue[lastIndex];
 	}
 	const T& operator[](uint32_t index) const { return const_cast<CircularQueue*>(this)->operator[](index); }
 
 	T& Top(const uint32_t& offsetFromEnd = 0U) 
 	{
-		if (offsetFromEnd >= QueueSize)
+		// Check for valid index
+		if (offsetFromEnd >= mSize)
 		{
 			throw std::exception("Index Out of Bound");
 		}
-		uint32_t lastIndex = ((QueueSize + (mEndIndex - offsetFromEnd - 1)) % QueueSize);
-		return mQueue[mEndIndex - 1];
+		// Solve for proper index
+		uint32_t properIndex = (QueueSize + (mEndIndex - mSize) + offsetFromEnd) % QueueSize;
+		// Access proper Index
+		assert(properIndex >= 0 && properIndex < QueueSize);
+		return mQueue[properIndex];
 	}
 	const T& Top(const uint32_t& offsetFromEnd = 0U) const { return const_cast<CircularQueue*>(this)->Top(offsetFromEnd); }
 
+	// Returns true if the size has changed
 	bool Pop()
 	{
-		--mSize;
+		if (mSize == 0)
+		{
+			return false;
+		}
+		else
+		{
+			--mSize;
+			return true;
+		}
 	}
 
 	T PopBack()
 	{
-		if (mSize > 0)
+		if (mSize == 0)
 		{
-			--mEndIndex;
-			if (mEndIndex < 0)
-			{
-				mEnd += QueueSize;
-			}
-			T popped = mQueue[mEndIndex];
-
-			--mSize;
-
-			return popped;
+			throw std::exception("Invalid Operation: Pop an empty Queue");
 		}
+
+		// Solve for proper index
+		uint32_t properIndex = (QueueSize + mEndIndex - mSize) % QueueSize;
+		T popped = mQueue[properIndex];
+
+		--mSize;
+
+		return popped;
 	}
 
+	// Returns true if size has changed, false otherwise
 	bool PushBack(const T& item, T* OutPopped = nullptr)
 	{
 		bool result = true;
@@ -80,7 +91,7 @@ public:
 			else
 			{	// Return value overwritten in OutPopped
 				uint32_t beginningIndex = (QueueSize + (mEndIndex - mSize)) % QueueSize;
-				*(OutPopped) = mQueue[beginningIndex];
+				*(OutPopped) = std::move(mQueue[beginningIndex]);
 				--mSize;
 
 				// Return false after Pop procedure
@@ -116,17 +127,85 @@ protected:
 	struct PacketFrame
 	{
 		uint32_t SequenceNumber;
-		const uint8_t * DataPointer;
+		uint8_t * DataPointer;
 		uint32_t SizeOfData;
 		bool IsAcknowledged;
 		bool IsDataCloned;
 
 		PacketFrame() : SequenceNumber(0), DataPointer(nullptr), SizeOfData(0), IsAcknowledged(false), IsDataCloned(false) {}
+		
+		PacketFrame(const PacketFrame& other) : SequenceNumber(other.SequenceNumber), IsAcknowledged(other.IsAcknowledged)
+			, SizeOfData(other.SizeOfData), IsDataCloned(other.IsDataCloned)
+		{
+			if (IsDataCloned)
+			{
+				// Transfer memory over to DataPointer
+				uint8_t * clone = reinterpret_cast<uint8_t *>(malloc(SizeOfData));
+				memcpy_s(clone, static_cast<size_t>(SizeOfData), other.DataPointer, static_cast<size_t>(SizeOfData));
+
+				DataPointer = clone;
+			}
+			else
+			{
+				DataPointer = other.DataPointer;
+			}
+		}
+
+		PacketFrame& operator=(const PacketFrame& rhs)
+		{
+			if (this != &rhs)
+			{
+				SequenceNumber = rhs.SequenceNumber;
+				IsAcknowledged = rhs.IsAcknowledged;
+				SizeOfData = rhs.SizeOfData;
+				IsDataCloned = rhs.IsDataCloned;
+
+				if (IsDataCloned)
+				{
+					// Transfer memory over to DataPointer
+					uint8_t * clone = reinterpret_cast<uint8_t *>(malloc(SizeOfData));
+					memcpy_s(clone, static_cast<size_t>(SizeOfData), rhs.DataPointer, static_cast<size_t>(SizeOfData));
+
+					DataPointer = clone;
+				}
+				else
+				{
+					DataPointer = rhs.DataPointer;
+				}
+			}
+			return *this;
+		}
+
+		PacketFrame(PacketFrame&& other) : SequenceNumber(other.SequenceNumber), IsAcknowledged(other.IsAcknowledged)
+			, DataPointer(other.DataPointer), SizeOfData(other.SizeOfData), IsDataCloned(other.IsDataCloned)
+		{
+			other.DataPointer = nullptr;
+			other.SizeOfData = 0;
+			other.IsDataCloned = false;
+		}
+
+		PacketFrame& operator=(PacketFrame&& rhs)
+		{
+			if (this != &rhs)
+			{
+				SequenceNumber = rhs.SequenceNumber;
+				IsAcknowledged = rhs.IsAcknowledged;
+				DataPointer = rhs.DataPointer;
+				SizeOfData = rhs.SizeOfData;
+				IsDataCloned = rhs.IsDataCloned;
+
+				rhs.DataPointer = nullptr;
+				rhs.SizeOfData = 0;
+				rhs.IsDataCloned = false;
+			}
+			return *this;
+		}
+
 		~PacketFrame()
 		{	// Free memory
 			if (IsDataCloned && DataPointer != nullptr)
 			{
-				free(const_cast<uint8_t*>(DataPointer));
+				//free(DataPointer);
 			}
 		}
 
@@ -142,11 +221,11 @@ protected:
 			// Free memory
 			if (IsDataCloned && DataPointer != nullptr)
 			{
-				free(const_cast<uint8_t*>(DataPointer));
+				free(DataPointer);
 			}
 
 			SequenceNumber = newSequenceNumber;
-			DataPointer = newDataPointer;
+			DataPointer = const_cast<uint8_t*>(newDataPointer);
 			SizeOfData = newSizeOfData;
 			IsAcknowledged = acknowledgement;
 			IsDataCloned = false;
@@ -158,13 +237,13 @@ protected:
 			// Free memory
 			if (IsDataCloned && DataPointer != nullptr)
 			{
-				free(const_cast<uint8_t*>(DataPointer));
+				free(DataPointer);
 			}
 
 			// Transfer memory over to DataPointer
 			SizeOfData = newData.size();
 			uint8_t * clone = reinterpret_cast<uint8_t *>(malloc(SizeOfData));
-			memcpy(clone, newData.data(), static_cast<size_t>(SizeOfData));
+			memcpy_s(clone, static_cast<size_t>(SizeOfData), newData.data(), static_cast<size_t>(SizeOfData));
 
 			// Initialize Frame
 			SequenceNumber = newSequenceNumber;
@@ -239,10 +318,11 @@ public:
 
 	/*============================= Sequence Number Wrap Around Functions ===================================*/
 	constexpr static const seq_num_t MaximumSequenceNumberValue = ~(seq_num_t(0U));
+	/*
 	static bool IsSeq2MoreRecent(seq_num_t seq1, seq_num_t seq2)
 	{
 		return ((seq1 > seq2) && (seq1 - seq2 <= MaximumSequenceNumberValue / 2)) || ((seq2 > seq1) && (seq2 - seq1  > MaximumSequenceNumberValue / 2));
-	}
+	}*/
 	static int32_t DiffFromSeq1ToSeq2(seq_num_t seq1, seq_num_t seq2)
 	{
 		uint32_t diff;
@@ -293,8 +373,10 @@ public:
 	}
 
 	/*============================= Send / Receive Helpers ===================================*/
-	bool IsConnectionTimeOut(std::chrono::high_resolution_clock::time_point startTime, uint32_t maxTimeOutMS);
-	bool ReceiveRPacket(RPacket& OutPacket, uint32_t maxTimeOutMS = 10000U);
+	bool IsConnectionTimeOut(std::chrono::high_resolution_clock::time_point startTime, int32_t maxTimeOutMS, uint64_t* OutDuration = nullptr);
+	bool ReceiveRPacket(uint32_t& OutBytesReceived, RPacket& OutPacket, int32_t maxTimeOutMS = 10000U);
+	bool ReceiveRPacket(RPacket& OutPacket, int32_t maxTimeOutMS = 10000U);
+	bool SendRPacket(uint32_t& OutBytesSent, const RPacket& packet);
 	bool SendRPacket(const RPacket& packet);
 public:
 

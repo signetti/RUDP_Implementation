@@ -13,45 +13,48 @@ union ackbitfield_t
 
 	struct
 	{
-		bool bit31 : 1;
-		bool bit30 : 1;
-		bool bit29 : 1;
-		bool bit28 : 1;
-		bool bit27 : 1;
-		bool bit26 : 1;
-		bool bit25 : 1;
-		bool bit24 : 1;
-		bool bit23 : 1;
-		bool bit22 : 1;
-		bool bit21 : 1;
-		bool bit20 : 1;
-		bool bit19 : 1;
-		bool bit18 : 1;
-		bool bit17 : 1;
-		bool bit16 : 1;
-		bool bit15 : 1;
-		bool bit14 : 1;
-		bool bit13 : 1;
-		bool bit12 : 1;
-		bool bit11 : 1;
-		bool bit10 : 1;
-		bool bit09 : 1;
-		bool bit08 : 1;
-		bool bit07 : 1;
-		bool bit06 : 1;
-		bool bit05 : 1;
-		bool bit04 : 1;
-		bool bit03 : 1;
-		bool bit02 : 1;
-		bool bit01 : 1;
 		bool bit00 : 1;
+		bool bit01 : 1;
+		bool bit02 : 1;
+		bool bit03 : 1;
+		bool bit04 : 1;
+		bool bit05 : 1;
+		bool bit06 : 1;
+		bool bit07 : 1;
+		bool bit08 : 1;
+		bool bit09 : 1;
+		bool bit10 : 1;
+		bool bit11 : 1;
+		bool bit12 : 1;
+		bool bit13 : 1;
+		bool bit14 : 1;
+		bool bit15 : 1;
+		bool bit16 : 1;
+		bool bit17 : 1;
+		bool bit18 : 1;
+		bool bit19 : 1;
+		bool bit20 : 1;
+		bool bit21 : 1;
+		bool bit22 : 1;
+		bool bit23 : 1;
+		bool bit24 : 1;
+		bool bit25 : 1;
+		bool bit26 : 1;
+		bool bit27 : 1;
+		bool bit28 : 1;
+		bool bit29 : 1;
+		bool bit30 : 1;
+		bool bit31 : 1;
 	};
 
-	ackbitfield_t() : bitfield() {}
+	ackbitfield_t() : bitfield(0U) {}
+	ackbitfield_t(bool defaultValues) : bitfield((defaultValues) ? ~(0U) : 0U) {}
 	ackbitfield_t(uint32_t bits) : bitfield(bits) {}
+
+	bool IsAll(bool value) const { return bitfield == ((value) ? ~(0U) : 0U); }
+
 	bool operator[](uint32_t bit_number) const
 	{
-		assert(bit_number < 32);
 		switch (bit_number)
 		{
 		case 0:		return bit00;
@@ -92,41 +95,41 @@ union ackbitfield_t
 
 	void Set(uint32_t bit_number, bool value)
 	{
-		assert(bit_number < 32);
 		switch (bit_number)
 		{
-		case 0:		bit00 = value;
-		case 1:		bit01 = value;
-		case 2:		bit02 = value;
-		case 3:		bit03 = value;
-		case 4:		bit04 = value;
-		case 5:		bit05 = value;
-		case 6:		bit06 = value;
-		case 7:		bit07 = value;
-		case 8:		bit08 = value;
-		case 9:		bit09 = value;
-		case 10:	bit10 = value;
-		case 11:	bit11 = value;
-		case 12:	bit12 = value;
-		case 13:	bit13 = value;
-		case 14:	bit14 = value;
-		case 15:	bit15 = value;
-		case 16:	bit16 = value;
-		case 17:	bit17 = value;
-		case 18:	bit18 = value;
-		case 19:	bit19 = value;
-		case 20:	bit20 = value;
-		case 21:	bit21 = value;
-		case 22:	bit22 = value;
-		case 23:	bit23 = value;
-		case 24:	bit24 = value;
-		case 25:	bit25 = value;
-		case 26:	bit26 = value;
-		case 27:	bit27 = value;
-		case 28:	bit28 = value;
-		case 29:	bit29 = value;
-		case 30:	bit30 = value;
-		case 31:	bit31 = value;
+		case 0:		bit00 = value; break;
+		case 1:		bit01 = value; break;
+		case 2:		bit02 = value; break;
+		case 3:		bit03 = value; break;
+		case 4:		bit04 = value; break;
+		case 5:		bit05 = value; break;
+		case 6:		bit06 = value; break;
+		case 7:		bit07 = value; break;
+		case 8:		bit08 = value; break;
+		case 9:		bit09 = value; break;
+		case 10:	bit10 = value; break;
+		case 11:	bit11 = value; break;
+		case 12:	bit12 = value; break;
+		case 13:	bit13 = value; break;
+		case 14:	bit14 = value; break;
+		case 15:	bit15 = value; break;
+		case 16:	bit16 = value; break;
+		case 17:	bit17 = value; break;
+		case 18:	bit18 = value; break;
+		case 19:	bit19 = value; break;
+		case 20:	bit20 = value; break;
+		case 21:	bit21 = value; break;
+		case 22:	bit22 = value; break;
+		case 23:	bit23 = value; break;
+		case 24:	bit24 = value; break;
+		case 25:	bit25 = value; break;
+		case 26:	bit26 = value; break;
+		case 27:	bit27 = value; break;
+		case 28:	bit28 = value; break;
+		case 29:	bit29 = value; break;
+		case 30:	bit30 = value; break;
+		case 31:	bit31 = value; break;
+		default:	throw std::exception("Index Out Of Range");
 		}
 	}
 	

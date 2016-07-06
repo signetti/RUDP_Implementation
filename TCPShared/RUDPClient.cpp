@@ -49,7 +49,7 @@ RUDPStream RUDPClient::Connect(const SOCKET & serverSocket, const sockaddr & ser
 
 		// Begin Timing (Record Time it was Sent)
 		std::chrono::high_resolution_clock::time_point timeSentToServer = std::chrono::high_resolution_clock::now();
-		printf("Establishing Connection: Sending  seq <%d> ack<%d>\n", seqNum, 0);
+		printf("Establishing Connection: Sending seq <%d> ack<%d>\n", seqNum, 0);
 
 		for (;;)
 		{
@@ -128,6 +128,9 @@ RUDPStream RUDPClient::Connect(const SOCKET & serverSocket, const sockaddr & ser
 
 	// At this point the connection is established
 	printf("Acknowledging Connection: Sending  seq <%d> ack<%d>\n", seqNum, ackNum);
+
+	// Next message that will be sent should be one sequence number higher
+	seqNum += 1;
 
 	return RUDPStream(serverSocket, fromAddress, seqNum, ackNum, maxConnectionTimeOut);
 	//return RUDPStream(serverSocket, serverAddress, seqNum, ackNum, maxConnectionTimeOut);
