@@ -410,7 +410,7 @@ bool RUDPStream::ReceiveRPacket(uint32_t & OutBytesReceived, RPacket & OutPacket
 				// DEBUG: For Debugging Purposes only
 				printf("---- Packet Rcvd [%s]: seq<%d> ack<%d> ack_bit<%X> msg_id<%d> frag<%d> num_bytes_rcvd<%d>\n"
 					, currentDateTime().c_str(), OutPacket.Sequence(), OutPacket.Ack(), OutPacket.AckBitfield().bitfield
-					, OutPacket.MessageId(), OutPacket.FragmentCount(), OutPacket.Buffer().size());
+					, OutPacket.MessageId(), OutPacket.FragmentCount(), static_cast<uint32_t>(OutPacket.Buffer().size()));
 
 				return true;
 			}
@@ -470,7 +470,7 @@ bool RUDPStream::SendRPacket(uint32_t& OutBytesSent, const RPacket & packet)
 	// DEBUG: For Debugging Purposes only
 	printf("---- Packet Sent [%s]: seq<%d> ack<%d> ack_bit<%X> msg_id<%d> frag<%d> num_bytes_sent<%d>\n"
 		, currentDateTime().c_str(), packet.Sequence(), packet.Ack(), packet.AckBitfield().bitfield
-		, packet.MessageId(), packet.FragmentCount(), packet.Buffer().size());
+		, packet.MessageId(), packet.FragmentCount(), static_cast<uint32_t>(packet.Buffer().size()));
 
 	// Return Success!
 	return true;
@@ -635,12 +635,21 @@ int RUDPStream::Send(const uint8_t * data, uint32_t sizeOfData)
 				{	// RUDP Packet Received!
 					assert(packet.MessageId() == mMessageId);	// Should be consistent
 
+					if (packet.Sequence() < mRemoteSequenceNumber)
+					{	// Old Packet received...
+						printf("Received packet for new message detected, ignored...\n");
+						continue;
+					}
+					else if (packet.Sequence() >= mRemoteSequenceNumber + numberOfFragments)
+					{	// Packet outside of range received...
+						printf("Received packet for new message detected, ignored...\n");
+						continue;
+					}
+
 					// Record time as most recent received packet!
 					lastTimeReceivedPacket = std::chrono::high_resolution_clock::now();
-					if (fragment >= numberOfFragments - 1)
-					{
-						numberOfFragments = numberOfFragments;
-					}
+
+
 					// =================== Handle Sequence Number =================
 
 					int32_t packetOffset = DiffFromSeq1ToSeq2(lastReceivedRemoteSequenceNumber, packet.Sequence());
@@ -825,17 +834,17 @@ int RUDPStream::Receive(char * OutBuffer, uint32_t sizeOfBuffer)
 			continue;
 		}
 
-		if (receivedRemoteSequenceNumber >= mRemoteSequenceNumber + fragmentCount)
+		if (receivedRemoteSequenceNumber < mRemoteSequenceNumber)
+		{	// Old Packet received...
+			printf("Packet for new message detected, but ignored...\n");
+			continue;
+		}
+		else if (!isFirstPacket && receivedRemoteSequenceNumber >= mRemoteSequenceNumber + fragmentCount)
 		{	// Packet outside of range received...
 			printf("Packet for new message detected, but ignored...\n");
 			continue;
 		}
-		else if (receivedRemoteSequenceNumber < mRemoteSequenceNumber)
-		{	// Old Packet received...
-			printf("Packet for new message detected, but ignored...\n");
-			continue;
-
-		}
+		
 
 		// Assert that the message is correct
 		assert(isFirstPacket || mMessageId == packet.MessageId());

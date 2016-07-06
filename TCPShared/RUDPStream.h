@@ -241,7 +241,7 @@ protected:
 			}
 
 			// Transfer memory over to DataPointer
-			SizeOfData = newData.size();
+			SizeOfData = static_cast<uint32_t>(newData.size());
 			uint8_t * clone = reinterpret_cast<uint8_t *>(malloc(SizeOfData));
 			memcpy_s(clone, static_cast<size_t>(SizeOfData), newData.data(), static_cast<size_t>(SizeOfData));
 

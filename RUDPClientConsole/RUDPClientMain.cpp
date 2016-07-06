@@ -50,7 +50,7 @@ int __cdecl main()
 	// Notify that connection is reached
 	printf("Client-Server Connection Established.\n");
 
-	for (;;)
+	do
 	{
 		/*
 		// Create RUDP Packet
@@ -93,6 +93,6 @@ int __cdecl main()
 
 
 		Sleep((rand() % 1000) + 2000);
-	}
+	} while (getchar() != 'q');
 }
 

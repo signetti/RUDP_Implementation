@@ -66,16 +66,11 @@ int __cdecl main()
 		// Receiving Packets
 		{
 			bytesReceived = client.Receive(recvbuf, BUF_SIZE);
-			if (bytesReceived <= 0)
+			if (bytesReceived > 0)
 			{
-				printf("wut\n");
-				continue;
+				std::string message(recvbuf, bytesReceived);
+				printf("%s\n\n", message.c_str());
 			}
-
-			std::string message(recvbuf, bytesReceived);
-			printf("%s\n\n", message.c_str());
-
-			printf("waiting on port %s\n", DEFAULT_SERVER_PORT);
 		}
 		/*
 		// Receiving Packets

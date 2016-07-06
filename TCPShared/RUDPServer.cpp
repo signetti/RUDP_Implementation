@@ -265,7 +265,7 @@ bool RUDPServer::Listen()
 				if (data.Ack() == mAcknowledgeTable[index].seqNumSent + 1U)
 				{	// Successful Acknowledgement from Client!
 					printf("Acknowledged Connection: Received seq <%d> ack<%d>\n", data.Sequence(), data.Ack());
-
+					/**/
 					// Make Socket Blocking
 					DWORD blocking = 0;
 					if (ioctlsocket(mClientSocket, FIONBIO, &blocking) != 0)
