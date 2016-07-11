@@ -4,6 +4,8 @@
 #include <string>
 #include <chrono>
 
+//#include "Socket.h"
+
 class RUDPStream;
 
 class RUDPServer
@@ -76,7 +78,6 @@ public:
 	*	@return returns true if successful, false otherwise.
 	*/
 	bool Listen();
-	bool Listen2();
 
 
 	/**

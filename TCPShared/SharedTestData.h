@@ -116,7 +116,87 @@ inceptos himenaeos. Curabitur gravida purus non congue laoreet. Ut \
 rhoncus maximus lectus, ac venenatis urna pretium non.Sed luctus \
 pellentesque purus vel ornare.Mauris elit metus, lacinia vel sem vel, \
 porttitor interdum ipsum.Sed sit amet ante nec ipsum ultricies \
-tristique vitae quis neque.Aenean felis enim, facilisis et sem amet.|";
+tristique vitae quis neque.Aenean felis enim, facilisis et sem amet.\
+Quisque vehicula commodo ullamcorper.Morbi non consectetur urna. \
+Crassuscipit eu arcu sed volutpat.Aenean lectus velit, fringilla vitae \
+purus non, commodo laoreet turpis.Cum sociis natoque penatibus et magnis \
+dis parturient montes, nascetur ridiculus mus.Nullam posuere augue et \
+justo condimentum, ut mollis elit rhoncus.Nunc convallis nibh vestibulum \
+nulla porttitor, eget laoreet sapien mollis.Praesent ornare, augue sit \
+amet tristique placerat, orci eros volutpat mi, a convallis dui metus id \
+lacus.Phasellus sed eros eget enim consequat dapibus.Integer viverra \
+condimentum euismod.Pellentesque habitant morbi tristique senectus et \
+netus et malesuada fames ac turpis egestas. \n\
+Mauris et justo ac lectus aliquam varius in sit amet ex.Cum sociis \
+natoque penatibus et magnis dis parturient montes, nascetur ridiculus \
+mus.Mauris augue lacus, tincidunt et sollicitudin eget, rhoncus vel diam. \
+Curabitur efficitur lacinia ex, et consequat sem faucibus placerat.Nunc \
+est tellus, mattis nec risus nec, semper viverra elit.Morbi vestibulum \
+rutrum iaculis.Ut eu efficitur velit, nec suscipit tellus.Nunc ultricies \
+in magna a porta.Fusce ac nisl eu dui luctus commodo.Duis nec lorem \
+auctor, suscipit mi non, dictum risus.Etiam molestie nulla ac velit \
+rhoncus auctor.Nam tincidunt dignissim quam vulputate sodales.Class \
+aptent taciti sociosqu ad litora torquent per conubia nostra, per \
+inceptos himenaeos.Curabitur gravida purus non congue laoreet.Ut \
+rhoncus maximus lectus, ac venenatis urna pretium non.Sed luctus \
+pellentesque purus vel ornare.Mauris elit metus, lacinia vel sem vel, \
+porttitor interdum ipsum.Sed sit amet ante nec ipsum ultricies \
+eget ex iaculis, imperdiet sem sit amet, efficitur urna.Curabitur \
+rutrum lacinia justo, non maximus massa faucibus in.Sed accumsan \
+ultrices purus sed tempor.Proin tempus non ante quis gravida.Duis \
+elementum lacus mi, et semper leo laoreet ac.Vivamus cursus vel massa \
+elementum convallis.Ut vel eros vitae erat pellentesque dictum. \
+Nullam quis est sem.Integer pulvinar tempus tempus.\n\
+Mauris et justo ac lectus aliquam varius in sit amet ex.Cum sociis \
+natoque penatibus et magnis dis parturient montes, nascetur ridiculus \
+mus.Mauris augue lacus, tincidunt et sollicitudin eget, rhoncus vel diam. \
+Curabitur efficitur lacinia ex, et consequat sem faucibus placerat.Nunc \
+est tellus, mattis nec risus nec, semper viverra elit.Morbi vestibulum \
+rutrum iaculis.Ut eu efficitur velit, nec suscipit tellus.Nunc ultricies \
+in magna a porta.Fusce ac nisl eu dui luctus commodo.Duis nec lorem \
+auctor, suscipit mi non, dictum risus.Etiam molestie nulla ac velit \
+rhoncus auctor.Nam tincidunt dignissim quam vulputate sodales.Class \
+aptent taciti sociosqu ad litora torquent per conubia nostra, per \
+inceptos himenaeos.Curabitur gravida purus non congue laoreet.Ut \
+rhoncus maximus lectus, ac venenatis urna pretium non.Sed luctus \
+pellentesque purus vel ornare.Mauris elit metus, lacinia vel sem vel, \
+porttitor interdum ipsum.Sed sit amet ante nec ipsum ultricies \
+eget ex iaculis, imperdiet sem sit amet, efficitur urna.Curabitur \
+rutrum lacinia justo, non maximus massa faucibus in.Sed accumsan \
+ultrices purus sed tempor.Proin tempus non ante quis gravida.Duis \
+elementum lacus mi, et semper leo laoreet ac.Vivamus cursus vel massa \
+elementum convallis.Ut vel eros vitae erat pellentesque dictum. \
+Nullam quis est sem.Integer pulvinar tempus tempus.\n\
+Mauris et justo ac lectus aliquam varius in sit amet ex.Cum sociis \
+natoque penatibus et magnis dis parturient montes, nascetur ridiculus \
+mus.Mauris augue lacus, tincidunt et sollicitudin eget, rhoncus vel diam. \
+Curabitur efficitur lacinia ex, et consequat sem faucibus placerat.Nunc \
+est tellus, mattis nec risus nec, semper viverra elit.Morbi vestibulum \
+rutrum iaculis.Ut eu efficitur velit, nec suscipit tellus.Nunc ultricies \
+in magna a porta.Fusce ac nisl eu dui luctus commodo.Duis nec lorem \
+auctor, suscipit mi non, dictum risus.Etiam molestie nulla ac velit \
+rhoncus auctor.Nam tincidunt dignissim quam vulputate sodales.Class \
+aptent taciti sociosqu ad litora torquent per conubia nostra, per \
+inceptos himenaeos.Curabitur gravida purus non congue laoreet.Ut \
+rhoncus maximus lectus, ac venenatis urna pretium non.Sed luctus \
+pellentesque purus vel ornare.Mauris elit metus, lacinia vel sem vel, \
+porttitor interdum ipsum.Sed sit amet ante nec ipsum ultricies \
+tristique vitae quis neque.Aenean felis enim, facilisis et sem amet.\
+Quisque vehicula commodo ullamcorper.Morbi non consectetur urna. \
+Crassuscipit eu arcu sed volutpat.Aenean lectus velit, fringilla vitae \
+purus non, commodo laoreet turpis.Cum sociis natoque penatibus et magnis \
+dis parturient montes, nascetur ridiculus mus.Nullam posuere augue et \
+justo condimentum, ut mollis elit rhoncus.Nunc convallis nibh vestibulum \
+nulla porttitor, eget laoreet sapien mollis.Praesent ornare, augue sit \
+amet tristique placerat, orci eros volutpat mi, a convallis dui metus id \
+lacus.Phasellus sed eros eget enim consequat dapibus.Integer viverra \
+condimentum euismod.Pellentesque habitant morbi tristique senectus et \
+netus et malesuada fames ac turpis egestas. \
+Morbi mattis magna non nulla accumsan, at dictum dui venenatis. Integer \
+ut sodales justo.Aliquam erat volutpat.Vivamus efficitur nibh est, in \
+faucibus ligula interdum eu.Aliquam vel venenatis justo, vitae fringilla \
+enim.Nunc cursus dictum nulla non molestie.Etiam sit amet mattis lorem, \
+id sodales ex.Sed at tellus porttitor volutpat.|";
 
 // Validates the test message received with the test message in the system
 bool ValidateMessageReceived(const std::string& test, char * message, int size)

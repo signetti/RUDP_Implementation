@@ -383,9 +383,11 @@ bool RUDPStream::ReceiveRPacket(uint32_t & OutBytesReceived, RPacket & OutPacket
 	int bytesReceived;
 	bool isSuccess;
 	std::chrono::high_resolution_clock::time_point startTime = std::chrono::high_resolution_clock::now();
-
+	uint64_t timeDiff = 0;
+	//printf("Time: ");
 	do
 	{
+		//printf("%lld...", timeDiff);
 		// Get Incoming Packets
 		bytesReceived = recvfrom(mSocket, reinterpret_cast<char *>(mBuffer), sBufferSize, 0, NULL, NULL);
 
@@ -422,7 +424,8 @@ bool RUDPStream::ReceiveRPacket(uint32_t & OutBytesReceived, RPacket & OutPacket
 
 		// Sleep to give CPU some rest
 		Sleep(1);
-	} while (!IsConnectionTimeOut(startTime, maxTimeOutMS));
+	} while (!IsConnectionTimeOut(startTime, maxTimeOutMS, &timeDiff));
+	//printf("\n");
 
 	// Connection Timed-out
 	return false;
@@ -788,12 +791,6 @@ int RUDPStream::Receive(char * OutBuffer, uint32_t sizeOfBuffer)
 	bool isFirstPacket = true;
 	int32_t packetOffset;
 
-	// Declare this as a new message
-	++mMessageId;
-
-	// DEBUG: For Debugging Purposes only
-	printf("==== Begin Receiving [%s]: seq_num<%d> remote_seq_num<%d> msg_id<%d> max_time<%d>\n"
-		, currentDateTime().c_str(), mSequenceNumber, mRemoteSequenceNumber, mMessageId, mMaxConnectionTimeOut);
 
 	std::chrono::high_resolution_clock::time_point timeSinceLastValidPacketReceived = std::chrono::high_resolution_clock::now();
 	uint32_t timeSinceLastValidPacket;
@@ -814,9 +811,10 @@ int RUDPStream::Receive(char * OutBuffer, uint32_t sizeOfBuffer)
 			{	// Adjust expected sequence number
 				mSequenceNumber += fragmentCount;
 				mRemoteSequenceNumber += fragmentCount;
+
+				printf("==== Receiving Failed: Connection Timed-Out ====\n");
 			}
 
-			printf("Connection Timed-Out\n");
 			return 0;
 		}
 
@@ -865,6 +863,14 @@ int RUDPStream::Receive(char * OutBuffer, uint32_t sizeOfBuffer)
 
 			isFirstPacket = false;
 			assert(static_cast<uint32_t>(packetOffset) <= fragmentCount);	// Assert that the packet received is not more than the fragment count
+
+			// Declare this as a new message
+			++mMessageId;
+
+			// DEBUG: For Debugging Purposes only
+			printf("==== Begin Receiving [%s]: seq_num<%d> remote_seq_num<%d> msg_id<%d> max_time<%d>\n"
+				, currentDateTime().c_str(), mSequenceNumber, mRemoteSequenceNumber, mMessageId, mMaxConnectionTimeOut);
+		
 		}
 		else
 		{	// Do some asserts

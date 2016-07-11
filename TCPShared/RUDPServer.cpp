@@ -7,7 +7,7 @@
 #include <sstream>
 
 RUDPServer::RUDPServer(std::uint32_t listenPort, std::uint32_t maxConnectionTimeOut) : mListenSocket(INVALID_SOCKET), mInfo(NULL)
-	, mPort(IntToString(listenPort)), mClientSocket(INVALID_SOCKET), mAvailablePort(listenPort + 1), mMaxConnectionTimeOut(maxConnectionTimeOut)
+	, mPort(IntToString(listenPort)), mClientSocket(INVALID_SOCKET), mAvailablePort(listenPort), mMaxConnectionTimeOut(maxConnectionTimeOut)
 	, mAcknowledgeTable(), mAcceptedClients()
 {
 	// Start-Up the WSA Library
@@ -36,7 +36,7 @@ bool RUDPServer::Open()
 	if (!success) return false;
 	else return true;
 }
-
+/*
 bool RUDPServer::CreateSocket()
 {
 	// Check if listening socket is already created
@@ -77,7 +77,25 @@ bool RUDPServer::CreateSocket()
 	}
 	else return true;
 }
+*/
+bool RUDPServer::CreateSocket()
+{
+	// Check if listening socket is already created
+	if (mListenSocket != INVALID_SOCKET)
+	{
+		return true;
+	}
 
+	// Create Listening Socket
+	mListenSocket = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+	if (mListenSocket == INVALID_SOCKET)
+	{
+		printf("socket failed with error: %ld\n", WSAGetLastError());
+		return false;
+	}
+	else return true;
+}
+/*
 bool RUDPServer::Bind()
 {
 	int result;
@@ -98,6 +116,36 @@ bool RUDPServer::Bind()
 	}
 	else return true;
 }
+*/
+
+bool RUDPServer::Bind()
+{
+	// Make sure that the listening socket has been created
+	if (mListenSocket == INVALID_SOCKET)
+	{
+		return false;
+	}
+
+	int result;
+
+	// Bind the socket to its port
+	sockaddr_in localAddr;
+	memset(&localAddr, 0, sizeof(localAddr));
+	localAddr.sin_family = AF_INET;
+	localAddr.sin_addr.s_addr = htonl(INADDR_ANY);
+	localAddr.sin_port = htons((u_short)atoi(mPort.c_str()));
+
+	result = bind(mListenSocket, (sockaddr *)&localAddr, sizeof(sockaddr_in));
+
+	// Bind the socket to the computer's port
+	if (result == SOCKET_ERROR)
+	{
+		printf("bind failed with error: %d\n", WSAGetLastError());
+		closesocket(mListenSocket);
+		return false;
+	}
+	else return true;
+}
 
 std::string RUDPServer::IntToString(uint32_t number)
 {
@@ -106,6 +154,7 @@ std::string RUDPServer::IntToString(uint32_t number)
 	return message.str();
 }
 
+/*
 bool RUDPServer::CreateNewSocket(SOCKET& sock, std::string port)
 {
 	// ============ Create Socket ============
@@ -149,16 +198,58 @@ bool RUDPServer::CreateNewSocket(SOCKET& sock, std::string port)
 	}
 
 	// Make Socket Non-Blocking
-	DWORD blocking = 0;
-	if (ioctlsocket(sock, FIONBIO, &blocking) != 0)
+	DWORD nonBlocking = TRUE;
+	if (ioctlsocket(sock, FIONBIO, &nonBlocking) != 0)
 	{
 		printf("failed to set blocking\n");
-		assert(0);
+		closesocket(sock);
+		freeaddrinfo(info);
 		return false;
 	}
 
 	// New Socket Ready! Clean up...
 	freeaddrinfo(info);
+
+	return true;
+}
+*/
+
+bool RUDPServer::CreateNewSocket(SOCKET& sock, std::string port)
+{
+	// ============ Create Socket ============
+	int result;
+
+	// Create Listening Socket
+	sock = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+	if (sock == INVALID_SOCKET)
+	{
+		printf("socket failed with error: %ld\n", WSAGetLastError());
+		return false;
+	}
+
+	// Bind the socket to its port
+	sockaddr_in localAddr;
+	memset(&localAddr, 0, sizeof(localAddr));
+	localAddr.sin_family = AF_INET;
+	localAddr.sin_addr.s_addr = htonl(INADDR_ANY);
+	localAddr.sin_port = htons((u_short)atoi(port.c_str()));
+
+	result = bind(sock, (sockaddr *)&localAddr, sizeof(sockaddr_in));
+	if (result == SOCKET_ERROR)
+	{
+		printf("bind failed with error: %d\n", WSAGetLastError());
+		closesocket(sock);
+		return false;
+	}
+
+	// Make Socket Non-Blocking
+	DWORD nonBlocking = TRUE;
+	if (ioctlsocket(sock, FIONBIO, &nonBlocking) != 0)
+	{
+		printf("failed to set blocking\n");
+		closesocket(sock);
+		return false;
+	}
 
 	return true;
 }
@@ -195,11 +286,13 @@ bool RUDPServer::Listen()
 	}
 
 	// TODO: Find reason why this code does not work across computers...
-	/*
+	
 	// Find and Set Open Client Port
 	uint32_t MAX_PORT_CHECK;
+	++mAvailablePort;
 	for (MAX_PORT_CHECK = mAvailablePort + 9, isSuccess = false; !isSuccess && mAvailablePort <= MAX_PORT_CHECK; ++mAvailablePort)
 	{
+		printf("Testing port %d ... ", mAvailablePort);
 		isSuccess = CreateNewSocket(mClientSocket, IntToString(mAvailablePort));
 	}
 
@@ -207,8 +300,12 @@ bool RUDPServer::Listen()
 	{
 		printf("failed to open new port for incoming client\n");
 		return false;
-	}*/
-	mClientSocket = mListenSocket;
+	}
+	else
+	{
+		printf("Port Available: %d\n", mAvailablePort);
+	}
+	/**///mClientSocket = mListenSocket;
 
 	// Listen for any RUDP Packets from clients
 
@@ -265,7 +362,7 @@ bool RUDPServer::Listen()
 				if (data.Ack() == mAcknowledgeTable[index].seqNumSent + 1U)
 				{	// Successful Acknowledgement from Client!
 					printf("Acknowledged Connection: Received seq <%d> ack<%d>\n", data.Sequence(), data.Ack());
-					/**/
+					/*
 					// Make Socket Blocking
 					DWORD blocking = 0;
 					if (ioctlsocket(mClientSocket, FIONBIO, &blocking) != 0)
@@ -273,7 +370,7 @@ bool RUDPServer::Listen()
 						printf("failed to set blocking\n");
 						assert(0);
 						return false;
-					}
+					}*/
 
 					// Assign new Socket to Client
 					auto& client = mAcknowledgeTable[index];
@@ -304,7 +401,7 @@ bool RUDPServer::Listen()
 
 				std::vector<uint8_t> acknowledgePacket = RPacket::SerializeInstance(seqNum, ackNum, 0, 0, 0, std::vector<uint8_t>());
 
-				bytesSent = sendto(mClientSocket, reinterpret_cast<char *>(acknowledgePacket.data()), static_cast<int>(acknowledgePacket.size()), 0, &fromAddress, ADDR_LEN);
+				bytesSent = sendto(mClientSocket, reinterpret_cast<char *>(acknowledgePacket.data()), static_cast<int>(acknowledgePacket.size()), 0, &fromAddress, sizeof(fromAddress));
 				if (bytesSent < 0)
 				{
 					printf("sendto failed with error: %d\n", WSAGetLastError());
@@ -346,7 +443,7 @@ bool RUDPServer::Listen()
 					std::vector<uint8_t> acknowledgePacket = RPacket::SerializeInstance(ackInfo.seqNumSent, ackInfo.ackNumRecvd, 0, 0, 0, std::vector<uint8_t>());
 
 					// Send the Acknowledgement Packet
-					bytesSent = sendto(mClientSocket, reinterpret_cast<char *>(acknowledgePacket.data()), static_cast<int>(acknowledgePacket.size()), 0, &ackInfo.addr, ADDR_LEN);
+					bytesSent = sendto(mClientSocket, reinterpret_cast<char *>(acknowledgePacket.data()), static_cast<int>(acknowledgePacket.size()), 0, &ackInfo.addr, sizeof(ackInfo.addr));
 					if (bytesSent < 0)
 					{
 						printf("sendto failed with error: %d\n", WSAGetLastError());

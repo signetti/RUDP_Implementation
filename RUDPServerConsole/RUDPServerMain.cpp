@@ -29,7 +29,7 @@ int __cdecl main()
 	bool success;
 
 	// Create a server that is listening to the defined-port
-	RUDPServer server(DEFAULT_SERVER_PORT_NUMBER, 1000);
+	RUDPServer server(DEFAULT_SERVER_PORT_NUMBER, 1500);
 
 	// Open the server for connection (create socket, bind, then listen)
 	printf("Awaiting Client. . . \n");

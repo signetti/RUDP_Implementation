@@ -136,6 +136,7 @@ RUDPStream RUDPClient::Connect(const SOCKET & serverSocket, const sockaddr & ser
 	//return RUDPStream(serverSocket, serverAddress, seqNum, ackNum, maxConnectionTimeOut);
 }
 
+/*
 RUDPStream RUDPClient::ConnectToServer(const char * ip, char * port, char * clientPort, uint32_t maxConnectionTimeOut)
 {
 	struct addrinfo hints;
@@ -193,6 +194,64 @@ RUDPStream RUDPClient::ConnectToServer(const char * ip, char * port, char * clie
 	{
 		printf("bind failed with error: %d\n", WSAGetLastError());
 		closesocket(serverSocket);
+		return RUDPStream(INVALID_SOCKET);
+	}
+
+	// Check for Connection
+	struct sockaddr& serverAddress = *(info->ai_addr);
+
+	// Attempt to Connect, return results
+	return Connect(serverSocket, serverAddress, maxConnectionTimeOut);
+}
+*/
+
+
+RUDPStream RUDPClient::ConnectToServer(const char * ip, char * port, char * /*clientPort*/, uint32_t maxConnectionTimeOut)
+{
+	SOCKET serverSocket = INVALID_SOCKET;
+	int result;
+
+	// Start Up WSA
+	WSAManager::StartUp();
+
+	// Create a SOCKET for connecting to server
+	serverSocket = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+	if (serverSocket == INVALID_SOCKET)
+	{
+		printf("socket failed with error: %ld\n", WSAGetLastError());
+		return RUDPStream(INVALID_SOCKET);
+	}
+	/*
+	// Bind the socket to its port
+	sockaddr_in localAddr;
+	memset(&localAddr, 0, sizeof(localAddr));
+	localAddr.sin_family = AF_INET;
+	localAddr.sin_addr.s_addr = htonl(INADDR_ANY);
+	localAddr.sin_port = htons((u_short)atoi(clientPort));
+
+	result = bind(serverSocket, (sockaddr *)&localAddr, sizeof(sockaddr_in));
+	if (result == SOCKET_ERROR)
+	{
+		printf("bind failed with error: %d\n", WSAGetLastError());
+		closesocket(serverSocket);
+		return RUDPStream(INVALID_SOCKET);
+	}*/
+
+	// Bind the socket to its port
+	struct addrinfo hints;
+	struct addrinfo * info;
+
+	// Get Address Information from the given IP and Port
+	ZeroMemory(&hints, sizeof(hints));
+	hints.ai_family = AF_INET;
+	hints.ai_socktype = SOCK_DGRAM;
+	hints.ai_protocol = IPPROTO_UDP;
+
+	// Resolve the server address and port
+	result = getaddrinfo(ip, port, &hints, &info);
+	if (result != 0)
+	{
+		printf("getaddrinfo failed with error: %d\n", result);
 		return RUDPStream(INVALID_SOCKET);
 	}
 
