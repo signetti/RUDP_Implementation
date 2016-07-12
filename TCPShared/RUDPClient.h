@@ -2,14 +2,16 @@
 #include <winsock2.h>
 #include <chrono>
 
+#include "Socket.h"
+
 class RUDPStream;
 
 class RUDPClient
 {
 private:
 	// Something
-	static RUDPStream Connect(const SOCKET& serverSocket, const struct sockaddr& serverAddress, uint32_t maxConnectionTimeOut);
-	// Gets the address information and calls GetServerSocket to complete socket creation.
+	static RUDPStream Connect(UDPSocket & serverSocket, const std::string& serverAddress, unsigned short serverPort, uint32_t maxConnectionTimeOut);
+		// Gets the address information and calls GetServerSocket to complete socket creation.
 	//static RUDPStream GetServerStream(char * ip, char * port, char * clientPort, uint32_t maxConnectionTimeOut);
 
 public:
@@ -23,6 +25,6 @@ public:
 	*	@param	port	Server port number.
 	*	@return returns a TCPStream with an open socket connecting to the server. Returns an invalid stream if connection fails.
 	*/
-	static RUDPStream ConnectToServer(const char * ip, char * port, char * clientPort, uint32_t maxConnectionTimeOut);
+	static RUDPStream ConnectToServer(const char * ip, unsigned short port, unsigned short clientPort, uint32_t maxConnectionTimeOut);
 };
 

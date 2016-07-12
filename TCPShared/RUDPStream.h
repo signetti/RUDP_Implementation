@@ -5,6 +5,7 @@
 #include <assert.h>
 
 #include "RPacket.h"
+#include "Socket.h"
 
 template <typename T, uint32_t QueueSize>
 class CircularQueue
@@ -297,9 +298,12 @@ public:
 
 
 	//The socket with which the stream is established
-	SOCKET mSocket;
+	shared_ptr<UDPSocket> mSocket;
 	// Address information where to send the packets
-	struct sockaddr mToAddress;
+	std::string mToAddress;
+	unsigned short mToPort;
+
+	//struct sockaddr mToAddress;
 	// Time (in milliseconds) to wait before determine a connection is lost
 	uint32_t mMaxConnectionTimeOut;
 
@@ -385,14 +389,10 @@ public:
 	*	RUDPStream Constructor
 	*	@param	socket		The socket with which the stream is established
 	*/
-	explicit RUDPStream(const SOCKET& socket, const struct sockaddr& toAddress
-		, const uint32_t& senderSequenceNumber, const uint32_t& receiverSequenceNumber, uint32_t maxConnectionTimeOut = 2000);
+	explicit RUDPStream(const shared_ptr<UDPSocket>& socket, std::string toAddress, unsigned short toPort,
+		const uint32_t& senderSequenceNumber, const uint32_t& receiverSequenceNumber, uint32_t maxConnectionTimeOut = 2000);
 
-	/**
-	*	RUDPStream Constructor for receiving RUDP Connections only
-	*	@param	socket		The socket with which the stream is established
-	*/
-	explicit RUDPStream(const SOCKET& socket);
+	static RUDPStream RUDPStream::InvalidStream();
 	/**
 	*	RUDPStream Destructor
 	*/

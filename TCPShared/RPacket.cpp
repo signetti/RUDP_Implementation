@@ -136,7 +136,8 @@ bool RPacket::Deserialize(uint8_t * buffer)
 
 	// Assign Packet Values to this RPacket
 	uint32_t id = packet->prot_id();
-	if (id == RUDP_ID)
+	uint32_t size = static_cast<uint32_t>(packet->buffer()->size());
+	if (id == RUDP_ID && size < 1200)
 	{
 		mId = id;
 		mSeq = packet->sequence();
@@ -145,7 +146,7 @@ bool RPacket::Deserialize(uint8_t * buffer)
 		mMessageId = packet->message_id();
 		mFragmentCount = packet->fragment_count();
 
-		mBuffer = CopyBytes(packet->buffer()->data(), static_cast<int32_t>(packet->buffer()->size()));
+		mBuffer = CopyBytes(packet->buffer()->data(), size);
 		return true;
 	}
 	return false;

@@ -37,11 +37,9 @@ typedef void raw_type;       // Type used for raw data on this platform
 
 #include <errno.h>             // For errno
 
-using namespace std;
+#include "RPacket.h"
 
-#ifdef WIN32
-static bool initialized = false;
-#endif
+using namespace std;
 
 // SocketException Code
 
@@ -71,7 +69,12 @@ const char *SocketException::what() const //throw()
 
 // Function to fill in address structure given an address and port
 
-/*static void fillAddr(const string &address, unsigned short port,
+/* NOT TRUSTWORTHY...
+*/
+#define __USE_NEW true
+
+#if __USE_NEW
+static void fillAddr(const string &address, unsigned short port,
 	sockaddr_in &addr)
 {
 	memset(&addr, 0, sizeof(addr));  // Zero out address structure
@@ -87,25 +90,10 @@ const char *SocketException::what() const //throw()
 	addr.sin_addr.s_addr = *((unsigned long *)host->h_addr_list[0]);
 
 	addr.sin_port = htons(port);     // Assign port in network byte order
-}*/
-
+}
+#else
 static void fillAddr(const string &address, unsigned short port, sockaddr_in &addr)
 {
-	memset(&addr, 0, sizeof(addr));  // Zero out address structure
-	addr.sin_family = AF_INET;       // Internet address
-
-	hostent *host;  // Resolve name
-	if ((host = gethostbyname(address.c_str())) == NULL)
-	{
-		// strerror() will not work for gethostbyname() and hstrerror() 
-		// is supposedly obsolete
-		throw SocketException("Failed to resolve name (gethostbyname())");
-	}
-	addr.sin_addr.s_addr = *((unsigned long *)host->h_addr_list[0]);
-
-	addr.sin_port = htons(port);     // Assign port in network byte order
-	
-	/* NOT TRUSTWORTHY...
 	struct addrinfo hints;
 	struct addrinfo * info;
 	int result;
@@ -138,27 +126,15 @@ static void fillAddr(const string &address, unsigned short port, sockaddr_in &ad
 	{
 		throw SocketException("Failed to cast to sockaddr_in (getaddrinfo())");
 	}
-	*/
 }
+#endif
 
 // Socket Code
 
 Socket::Socket(int type, int protocol) //throw(SocketException)
 {
-#ifdef WIN32
-	if (!initialized)
-	{
-		WORD wVersionRequested;
-		WSADATA wsaData;
-
-		wVersionRequested = MAKEWORD(2, 0);              // Request WinSock v2.0
-		if (WSAStartup(wVersionRequested, &wsaData) != 0)
-		{  // Load WinSock DLL
-			throw SocketException("Unable to load WinSock DLL");
-		}
-		initialized = true;
-	}
-#endif
+	// Initialize WSA
+	WSAManager::StartUp();
 
 	// Make a new socket
 	if ((sockDesc = socket(PF_INET, type, protocol)) < 0)
@@ -174,12 +150,39 @@ Socket::Socket(SOCKET sockDesc)
 
 Socket::~Socket()
 {
+	Close();
+}
+
+void Socket::Close()
+{
 #ifdef WIN32
 	::closesocket(sockDesc);
 #else
 	::close(sockDesc);
 #endif
-	sockDesc = SOCKET(-1);
+	sockDesc = SOCKET(INVALID_SOCKET);
+}
+
+bool Socket::IsOpen()
+{
+	return sockDesc != INVALID_SOCKET && IsConnected();
+}
+
+// http://stackoverflow.com/questions/851654/how-can-i-check-is-a-socket-is-still-open
+bool Socket::IsConnected()
+{
+	return true;
+	/*char buf;
+	int err = recvfrom(sockDesc, &buf, 1, MSG_PEEK, NULL, NULL);
+	if (err == SOCKET_ERROR)
+	{
+		err = WSAGetLastError();
+		if (err != WSAEWOULDBLOCK)
+		{
+			return false;
+		}
+	}
+	return true;*/
 }
 
 string Socket::getLocalAddress() //throw(SocketException)
@@ -216,7 +219,7 @@ void Socket::setLocalPort(unsigned short localPort) //throw(SocketException)
 	localAddr.sin_addr.s_addr = htonl(INADDR_ANY);
 	localAddr.sin_port = htons(localPort);
 
-	if (bind(sockDesc, (sockaddr *)&localAddr, sizeof(sockaddr_in)) < 0)
+	if (::bind(sockDesc, (sockaddr *)&localAddr, sizeof(sockaddr_in)) < 0)
 	{
 		throw SocketException("Set of local port failed (bind())", true);
 	}
@@ -229,7 +232,7 @@ void Socket::setLocalAddressAndPort(const string &localAddress,
 	sockaddr_in localAddr;
 	fillAddr(localAddress, localPort, localAddr);
 
-	if (bind(sockDesc, (sockaddr *)&localAddr, sizeof(sockaddr_in)) < 0)
+	if (::bind(sockDesc, (sockaddr *)&localAddr, sizeof(sockaddr_in)) < 0)
 	{
 		throw SocketException("Set of local address and port failed (bind())", true);
 	}
@@ -254,6 +257,16 @@ unsigned short Socket::resolveService(const string &service,
 		return (unsigned short)atoi(service.c_str());  /* Service is port number */
 	else
 		return ntohs(serv->s_port);    /* Found port (network byte order) by name */
+}
+
+Socket::Socket(const Socket & sock) : sockDesc(sock.sockDesc) {}
+
+void Socket::operator=(const Socket & sock)
+{
+	if (this != &sock)
+	{
+		sockDesc = sock.sockDesc;
+	}
 }
 
 // CommunicatingSocket Code
@@ -426,7 +439,7 @@ void UDPSocket::disconnect() //throw(SocketException)
 		}
 	}
 
-void UDPSocket::sendTo(const void *buffer, int bufferLen,
+void UDPSocket::sendTo(void *buffer, int bufferLen,
 	const string &foreignAddress, unsigned short foreignPort)
 	//throw(SocketException)
 {
@@ -434,28 +447,75 @@ void UDPSocket::sendTo(const void *buffer, int bufferLen,
 	fillAddr(foreignAddress, foreignPort, destAddr);
 
 	// Write out the whole buffer as a single message.
-	if (sendto(sockDesc, (raw_type *)buffer, bufferLen, 0,
-		(sockaddr *)&destAddr, sizeof(destAddr)) != bufferLen)
+	int bytesSent;
+
+	bytesSent = sendto(sockDesc, static_cast<raw_type *>(buffer), bufferLen, 0, (sockaddr *)&destAddr, sizeof(destAddr));
+	if (bytesSent != bufferLen)
 	{
-		throw SocketException("Send failed (sendto())", true);
+		std::string message("Send failed (sendto()) with error ");
+		int error = WSAGetLastError();
+		char digits[10];
+		_itoa_s(error, digits, 10);
+		message.append(digits);
+
+		throw SocketException(message.c_str(), true);
 	}
 }
 
-int UDPSocket::recvFrom(void *buffer, int bufferLen, string &sourceAddress,
-	unsigned short &sourcePort) //throw(SocketException)
+int UDPSocket::recvFrom(void *buffer, int bufferLen, string &sourceAddress,	unsigned short &sourcePort, int timeOutMS) //throw(SocketException)
 {
 	sockaddr_in clntAddr;
 	socklen_t addrLen = sizeof(clntAddr);
-	int rtn;
-	if ((rtn = recvfrom(sockDesc, (raw_type *)buffer, bufferLen, 0,
-		(sockaddr *)&clntAddr, (socklen_t *)&addrLen)) < 0)
+	int bytesReceived;
+	
+	// Use Select to place a delay
+	if (timeOutMS >= 0)
 	{
-		throw SocketException("Receive failed (recvfrom())", true);
+		// Setup timeval variable
+		timeval timeout;
+		timeout.tv_sec = (timeOutMS / 1000);
+		timeout.tv_usec = (timeOutMS % 1000) * 1000;
+
+		// Setup fd_set structure
+		fd_set fds;
+		FD_ZERO(&fds);
+		FD_SET(sockDesc, &fds);
+
+		// Begin Select (delays for response)
+		int state = select(0, &fds, 0, 0, &timeout);
+
+		// Select's return value:
+		// -1: error occurred
+		// 0: timed out
+		// > 0: data ready to be read
+		switch (state)
+		{
+		case 0:		return 0;	// Timed out, do whatever you want to handle this situation
+		case -1:	throw SocketException("Select failed (sendto())", true); break;
+		default:	break;
+		}
+	}
+
+	bytesReceived = recvfrom(sockDesc, (raw_type *)buffer, bufferLen, 0, (sockaddr *)&clntAddr, (socklen_t *)&addrLen);
+
+	if (bytesReceived < 0)
+	{
+		int error = WSAGetLastError();
+		if (error != WSAEWOULDBLOCK)
+		{
+			std::string message("Send failed (sendto()) with error ");
+			char digits[10];
+			_itoa_s(error, digits, 10);
+			message.append(digits);
+
+			throw SocketException(message.c_str(), true);
+		}
+		else return 0;
 	}
 	sourceAddress = inet_ntoa(clntAddr.sin_addr);
 	sourcePort = ntohs(clntAddr.sin_port);
 
-	return rtn;
+	return bytesReceived;
 }
 
 void UDPSocket::setMulticastTTL(unsigned char multicastTTL) //throw(SocketException)
@@ -493,4 +553,21 @@ void UDPSocket::leaveGroup(const string &multicastGroup) //throw(SocketException
 	{
 		throw SocketException("Multicast group leave failed (setsockopt())", true);
 	}
+}
+
+void RUDPSocket::sendTo(void * buffer, int bufferLen, const string & foreignAddress, unsigned short foreignPort)
+{
+	UDPSocket::sendTo(buffer, bufferLen, foreignAddress, foreignPort);
+}
+
+int RUDPSocket::recvFrom(void * buffer, int bufferLen, string & sourceAddress, unsigned short & sourcePort, int timeOut)
+{
+	int bytesReceived = UDPSocket::recvFrom(buffer, bufferLen, sourceAddress, sourcePort, timeOut);
+
+	if (bytesReceived > 0)
+	{
+
+	}
+	
+	return bytesReceived;
 }

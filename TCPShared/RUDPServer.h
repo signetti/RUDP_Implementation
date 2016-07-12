@@ -4,7 +4,8 @@
 #include <string>
 #include <chrono>
 
-//#include "Socket.h"
+#include "Socket.h"
+#include <memory>
 
 class RUDPStream;
 
@@ -13,32 +14,30 @@ class RUDPServer
 private:
 	struct PendingClientsT
 	{
-		struct sockaddr addr;
+		std::string address;
+		unsigned short port;
 		uint32_t seqNumSent;
 		uint32_t ackNumRecvd;
+		shared_ptr<UDPSocket> socket;
 		std::chrono::high_resolution_clock::time_point time_stamp;
-		SOCKET sock;
 
-		PendingClientsT(const struct sockaddr& address, uint32_t sequence, uint32_t acknowledgement, std::chrono::high_resolution_clock::time_point time)
-			: addr(address), seqNumSent(sequence), ackNumRecvd(acknowledgement), time_stamp(time), sock(INVALID_SOCKET) {}
+		PendingClientsT(shared_ptr<UDPSocket> sock, const std::string& address,	unsigned short port, uint32_t sequence
+			, uint32_t acknowledgement, std::chrono::high_resolution_clock::time_point time)
+			: socket(sock), address(address), port(port), seqNumSent(sequence), ackNumRecvd(acknowledgement), time_stamp(time) {}
 	};
 
 	std::vector<PendingClientsT> mAcknowledgeTable;
-	std::vector<PendingClientsT> mAcceptedClients;
-
-	// Available Open Socket for incoming clients
-	SOCKET mClientSocket;
 	// Available Port Number
-	uint32_t mAvailablePort;
+	uint16_t mAvailablePort;
 
 	// The listening socket
-	SOCKET mListenSocket;
+	shared_ptr<UDPSocket> mListenSocket;
 	// Address information on the listening socket
-	struct addrinfo * mInfo;
+	//struct addrinfo * mInfo;
 	// List of clients that this server has accepted
 	std::vector<RUDPStream *> mClients;
 	// Server port number to bind and listen to
-	std::string mPort;
+	//std::string mPort;
 
 	// How long to wait for acknowledgement of connection
 	std::uint32_t mMaxConnectionTimeOut;
@@ -51,7 +50,7 @@ public:
 	*	TCPServer constructor
 	*	@param	port	Server port number to bind and listen to
 	*/
-	RUDPServer(std::uint32_t listenPort, std::uint32_t maxConnectionTimeOut);
+	RUDPServer(std::uint16_t listenPort, std::uint32_t maxConnectionTimeOut);
 	~RUDPServer();
 
 	/**

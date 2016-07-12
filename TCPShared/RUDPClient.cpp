@@ -3,8 +3,12 @@
 #include "RUDPStream.h"
 #include "RPacket.h"
 
-RUDPStream RUDPClient::Connect(const SOCKET & serverSocket, const sockaddr & serverAddress, uint32_t maxConnectionTimeOut)
+RUDPStream RUDPClient::ConnectToServer(const char * ip, unsigned short port, unsigned short /*clientPort*/, uint32_t maxConnectionTimeOut)
 {
+	std::string serverAddress(ip);
+	unsigned short serverPort(port);
+
+	shared_ptr<UDPSocket> serverSocket = make_shared<UDPSocket>();
 	/** Perform Three-way Hand-shaking
 	*	This works as follows
 	*	 - Client sends message with SeqNum X
@@ -14,15 +18,6 @@ RUDPStream RUDPClient::Connect(const SOCKET & serverSocket, const sockaddr & ser
 	*	Returning the Num+1 tells the receiving end that the number was recognized.
 	*/
 
-	// Before beginning the process, we must make the recvfrom non-blocking
-	// This is to check on a time-out period to deliver the message again.
-	static DWORD NON_BLOCKING = TRUE;
-	if (ioctlsocket(serverSocket, FIONBIO, &NON_BLOCKING) != 0)
-	{
-		printf("failed to set non-blocking\n");
-		return RUDPStream(INVALID_SOCKET);
-	}
-
 	// Generate Initial Sequence Number
 	uint32_t seqNum = rand();
 
@@ -31,44 +26,46 @@ RUDPStream RUDPClient::Connect(const SOCKET & serverSocket, const sockaddr & ser
 
 	// Begin Establishing Connection
 	RPacket data;
-	int32_t bytesSent;
+	uint32_t packetSize;
 	int32_t bytesReceived;
 	char buffer[512];
-	sockaddr fromAddress;
+
+	std::string fromAddress = serverAddress;
+	unsigned short fromPort = serverPort;
 	bool isSuccess;
 	static int ADDR_LEN = sizeof(struct sockaddr_in);
 	for (;;)
 	{
 		// Send Request Packet
-		bytesSent = sendto(serverSocket, reinterpret_cast<char *>(acknowledgePacket.data()), static_cast<int>(acknowledgePacket.size()), 0, &serverAddress, ADDR_LEN);
-		if (bytesSent < 0)
+		packetSize = static_cast<uint32_t>(acknowledgePacket.size());
+		try
 		{
-			printf("sendto failed with error: %d\n", WSAGetLastError());
-			return RUDPStream(INVALID_SOCKET);
+			serverSocket->sendTo(reinterpret_cast<char *>(acknowledgePacket.data()), packetSize, serverAddress, serverPort);
+		}
+		catch (SocketException ex)
+		{
+			printf("sendto failed with error: %s\n", ex.what());
+			return RUDPStream::InvalidStream();
 		}
 
 		// Begin Timing (Record Time it was Sent)
 		std::chrono::high_resolution_clock::time_point timeSentToServer = std::chrono::high_resolution_clock::now();
+		printf("Sending to Server: ip<%s> port<%d>\n", serverAddress.c_str(), serverPort);
 		printf("Establishing Connection: Sending seq <%d> ack<%d>\n", seqNum, 0);
 
 		for (;;)
 		{
 			// Get Incoming Packets
-			bytesReceived = recvfrom(serverSocket, buffer, 512, 0, &fromAddress, &ADDR_LEN);
-			//bytesReceived = Select(buffer,512, maxConnectionTimeOut);
+			bytesReceived = serverSocket->recvFrom(buffer, 512, fromAddress, fromPort, maxConnectionTimeOut);
 
 			// Check if Packet is Received
 			if (bytesReceived > 0)
 			{	// Packet has been received!
 
 				// Check if packet's address is from server
-				if (strcmp(&fromAddress.sa_data[2], &serverAddress.sa_data[2]) != 0)
+				if (serverAddress != fromAddress)
 				{	// Packet is not from the server, ignore...
-					printf("RUDP Packet is not from Server: expected<%d.%d.%d.%d.%d.%d.%d.%d.%d.%d> actual<%d.%d.%d.%d.%d.%d.%d.%d.%d.%d>\n"
-						, (uint8_t)(serverAddress.sa_data[0]), (uint8_t)(serverAddress.sa_data[1]), (uint8_t)(serverAddress.sa_data[2]), (uint8_t)(serverAddress.sa_data[3]), (uint8_t)(serverAddress.sa_data[4])
-						, (uint8_t)(serverAddress.sa_data[5]), (uint8_t)(serverAddress.sa_data[6]), (uint8_t)(serverAddress.sa_data[7]), (uint8_t)(serverAddress.sa_data[8]), (uint8_t)(serverAddress.sa_data[9])
-						, (uint8_t)(fromAddress.sa_data[0]), (uint8_t)(fromAddress.sa_data[1]), (uint8_t)(fromAddress.sa_data[2]), (uint8_t)(fromAddress.sa_data[3]), (uint8_t)(fromAddress.sa_data[4])
-						, (uint8_t)(fromAddress.sa_data[5]), (uint8_t)(fromAddress.sa_data[6]), (uint8_t)(fromAddress.sa_data[7]), (uint8_t)(fromAddress.sa_data[8]), (uint8_t)(fromAddress.sa_data[9]));
+					printf("RUDP Packet is not from Server: expected<%s> actual<%s>\n", serverAddress.c_str(), fromAddress.c_str());
 					continue;
 				}
 
@@ -83,6 +80,7 @@ RUDPStream RUDPClient::Connect(const SOCKET & serverSocket, const sockaddr & ser
 				}
 
 				// Packet is an RUDP Packet from Server, accept Packet!
+				printf("Server Message Received: ip<%s> port<%d>\n", fromAddress.c_str(), fromPort);
 				break;
 			}
 			else if (WSAGetLastError() != WSAEWOULDBLOCK)
@@ -98,7 +96,11 @@ RUDPStream RUDPClient::Connect(const SOCKET & serverSocket, const sockaddr & ser
 			{
 				// Establishing connection timed-out. Return unsuccessful.
 				printf("Establishing Connection Timed Out.\n");
-				return RUDPStream(INVALID_SOCKET);
+				return RUDPStream::InvalidStream();
+			}
+			else
+			{
+				assert(false);
 			}
 		}
 
@@ -119,12 +121,18 @@ RUDPStream RUDPClient::Connect(const SOCKET & serverSocket, const sockaddr & ser
 	uint32_t ackNum = data.Sequence() + 1;
 	acknowledgePacket = RPacket::SerializeInstance(seqNum, ackNum, 0, 0, 0, std::vector<uint8_t>());
 
-	bytesSent = sendto(serverSocket, reinterpret_cast<char *>(acknowledgePacket.data()), static_cast<int>(acknowledgePacket.size()), 0, &serverAddress, ADDR_LEN);
-	if (bytesSent < 0)
+	// Send Acknowledged Packet
+	packetSize = static_cast<uint32_t>(acknowledgePacket.size());
+	try
 	{
-		printf("sendto failed with error: %d\n", WSAGetLastError());
-		return RUDPStream(INVALID_SOCKET);
+		serverSocket->sendTo(reinterpret_cast<char *>(acknowledgePacket.data()), packetSize, fromAddress, fromPort);
 	}
+	catch (SocketException ex)
+	{
+		printf("sendto failed with error: %s\n", ex.what());
+		return RUDPStream::InvalidStream();
+	}
+
 
 	// At this point the connection is established
 	printf("Acknowledging Connection: Sending  seq <%d> ack<%d>\n", seqNum, ackNum);
@@ -132,132 +140,6 @@ RUDPStream RUDPClient::Connect(const SOCKET & serverSocket, const sockaddr & ser
 	// Next message that will be sent should be one sequence number higher
 	seqNum += 1;
 
-	return RUDPStream(serverSocket, fromAddress, seqNum, ackNum, maxConnectionTimeOut);
+	return RUDPStream(serverSocket, fromAddress, fromPort, seqNum, ackNum, maxConnectionTimeOut);
 	//return RUDPStream(serverSocket, serverAddress, seqNum, ackNum, maxConnectionTimeOut);
-}
-
-/*
-RUDPStream RUDPClient::ConnectToServer(const char * ip, char * port, char * clientPort, uint32_t maxConnectionTimeOut)
-{
-	struct addrinfo hints;
-	struct addrinfo * info;
-
-	SOCKET serverSocket = INVALID_SOCKET;
-
-	// Start-Up WSA
-	WSAManager::StartUp();
-
-	// Get Address Information from the given IP and Port
-	ZeroMemory(&hints, sizeof(hints));
-	hints.ai_family = AF_UNSPEC;
-	hints.ai_socktype = SOCK_DGRAM;
-	hints.ai_protocol = IPPROTO_UDP;
-
-	int result;
-
-	// Resolve the server address and port
-	result = getaddrinfo(ip, port, &hints, &info);
-	if (result != 0)
-	{
-		printf("getaddrinfo failed with error: %d\n", result);
-		return RUDPStream(INVALID_SOCKET);
-	}
-
-	// Create a SOCKET for connecting to server
-	serverSocket = socket(info->ai_family, info->ai_socktype, info->ai_protocol);
-	if (serverSocket == INVALID_SOCKET)
-	{
-		printf("socket failed with error: %ld\n", WSAGetLastError());
-		return RUDPStream(INVALID_SOCKET);
-	}
-	
-	// Resolve this Client's address and port (to bind with)
-	struct addrinfo * clientInfo;
-	ZeroMemory(&hints, sizeof(hints));
-	hints.ai_family = AF_INET;
-	hints.ai_socktype = SOCK_DGRAM;
-	hints.ai_protocol = IPPROTO_UDP;
-	hints.ai_flags = AI_PASSIVE;	// Get Address Information from this computer
-
-	// Resolve the client's address and port
-	result = getaddrinfo(NULL, clientPort, &hints, &clientInfo);
-	if (result != 0)
-	{
-		printf("getaddrinfo failed with error: %d\n", result);
-		closesocket(serverSocket);
-		return RUDPStream(INVALID_SOCKET);
-	}
-
-	// Bind Port to Socket
-	result = bind(serverSocket, clientInfo->ai_addr, (int)clientInfo->ai_addrlen);
-	if (result == SOCKET_ERROR)
-	{
-		printf("bind failed with error: %d\n", WSAGetLastError());
-		closesocket(serverSocket);
-		return RUDPStream(INVALID_SOCKET);
-	}
-
-	// Check for Connection
-	struct sockaddr& serverAddress = *(info->ai_addr);
-
-	// Attempt to Connect, return results
-	return Connect(serverSocket, serverAddress, maxConnectionTimeOut);
-}
-*/
-
-
-RUDPStream RUDPClient::ConnectToServer(const char * ip, char * port, char * /*clientPort*/, uint32_t maxConnectionTimeOut)
-{
-	SOCKET serverSocket = INVALID_SOCKET;
-	int result;
-
-	// Start Up WSA
-	WSAManager::StartUp();
-
-	// Create a SOCKET for connecting to server
-	serverSocket = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
-	if (serverSocket == INVALID_SOCKET)
-	{
-		printf("socket failed with error: %ld\n", WSAGetLastError());
-		return RUDPStream(INVALID_SOCKET);
-	}
-	/*
-	// Bind the socket to its port
-	sockaddr_in localAddr;
-	memset(&localAddr, 0, sizeof(localAddr));
-	localAddr.sin_family = AF_INET;
-	localAddr.sin_addr.s_addr = htonl(INADDR_ANY);
-	localAddr.sin_port = htons((u_short)atoi(clientPort));
-
-	result = bind(serverSocket, (sockaddr *)&localAddr, sizeof(sockaddr_in));
-	if (result == SOCKET_ERROR)
-	{
-		printf("bind failed with error: %d\n", WSAGetLastError());
-		closesocket(serverSocket);
-		return RUDPStream(INVALID_SOCKET);
-	}*/
-
-	// Bind the socket to its port
-	struct addrinfo hints;
-	struct addrinfo * info;
-
-	// Get Address Information from the given IP and Port
-	ZeroMemory(&hints, sizeof(hints));
-	hints.ai_family = AF_INET;
-	hints.ai_socktype = SOCK_DGRAM;
-	hints.ai_protocol = IPPROTO_UDP;
-
-	// Resolve the server address and port
-	result = getaddrinfo(ip, port, &hints, &info);
-	if (result != 0)
-	{
-		printf("getaddrinfo failed with error: %d\n", result);
-		return RUDPStream(INVALID_SOCKET);
-	}
-
-	// Check for Connection
-	struct sockaddr& serverAddress = *(info->ai_addr);
-
-	// Attempt to Connect, return results
-	return Connect(serverSocket, serverAddress, maxConnectionTimeOut);
 }

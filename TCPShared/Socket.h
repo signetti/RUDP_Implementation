@@ -20,15 +20,18 @@
 #ifndef __PRACTICALSOCKET_INCLUDED__
 #define __PRACTICALSOCKET_INCLUDED__
 
+#pragma once
+
+#include <winsock2.h>
 #include <string>            // For string
 #include <exception>         // For exception class
 
 using namespace std;
 
-
 #ifndef WIN32
 typedef int SOCKET;             // Socket descriptor
 #endif
+
 
 /**
 *   Signals a problem with the execution of a socket call.
@@ -69,6 +72,11 @@ public:
 	*   Close and deallocate this socket
 	*/
 	~Socket();
+	void Close();
+	bool IsOpen();
+
+	// http://stackoverflow.com/questions/851654/how-can-i-check-is-a-socket-is-still-open
+	bool IsConnected();
 
 	/**
 	*   Get the local address
@@ -127,10 +135,12 @@ public:
 	static unsigned short resolveService(const string &service,
 		const string &protocol = "tcp");
 
+	// Must be exposed to be used by RUDPStream
+	Socket(const Socket &sock);
+	virtual void operator=(const Socket &sock);
+
 private:
 	// Prevent the user from trying to use value semantics on this object
-	Socket(const Socket &sock);
-	void operator=(const Socket &sock);
 
 protected:
 	SOCKET sockDesc;              // Socket descriptor
@@ -306,7 +316,7 @@ public:
 	*   @return true if send is successful
 	*   @exception SocketException thrown if unable to send datagram
 	*/
-	void sendTo(const void *buffer, int bufferLen, const string &foreignAddress,
+	virtual void sendTo(void *buffer, int bufferLen, const string &foreignAddress,
 		unsigned short foreignPort); //throw(SocketException);
 
 	/**
@@ -319,8 +329,7 @@ public:
 	*   @return number of bytes received and -1 for error
 	*   @exception SocketException thrown if unable to receive datagram
 	*/
-	int recvFrom(void *buffer, int bufferLen, string &sourceAddress,
-		unsigned short &sourcePort); //throw(SocketException);
+	virtual int recvFrom(void *buffer, int bufferLen, string &sourceAddress, unsigned short &sourcePort, int timeOut = -1); //throw(SocketException);
 
 	/**
 	*   Set the multicast TTL
@@ -343,8 +352,61 @@ public:
 	*/
 	void leaveGroup(const string &multicastGroup); //throw(SocketException);
 
-private:
+//private:
 	void setBroadcast();
 };
 
+
+
+/**
+*   RUDP socket class
+*/
+class RUDPSocket : public UDPSocket
+{
+public:
+	///**
+	//*   Construct a RUDP socket
+	//*   @exception SocketException thrown if unable to create UDP socket
+	//*/
+	//RUDPSocket(); //throw(SocketException);
+
+	///**
+	//*   Construct a RUDP socket with the given local port
+	//*   @param localPort local port
+	//*   @exception SocketException thrown if unable to create UDP socket
+	//*/
+	//RUDPSocket(unsigned short localPort); //throw(SocketException);
+
+	///**
+	//*   Construct a UDP socket with the given local port and address
+	//*   @param localAddress local address
+	//*   @param localPort local port
+	//*   @exception SocketException thrown if unable to create UDP socket
+	//*/
+	//RUDPSocket(const string &localAddress, unsigned short localPort);	//	throw(SocketException);
+
+	/**
+	*   Send the given buffer as a UDP datagram to the
+	*   specified address/port
+	*   @param buffer buffer to be written
+	*   @param bufferLen number of bytes to write
+	*   @param foreignAddress address (IP address or name) to send to
+	*   @param foreignPort port number to send to
+	*   @return true if send is successful
+	*   @exception SocketException thrown if unable to send datagram
+	*/
+	void sendTo(void *buffer, int bufferLen, const string &foreignAddress, unsigned short foreignPort) override; //throw(SocketException);
+
+	/**
+	*   Read read up to bufferLen bytes data from this socket.  The given buffer
+	*   is where the data will be placed
+	*   @param buffer buffer to receive data
+	*   @param bufferLen maximum number of bytes to receive
+	*   @param sourceAddress address of datagram source
+	*   @param sourcePort port of data source
+	*   @return number of bytes received and -1 for error
+	*   @exception SocketException thrown if unable to receive datagram
+	*/
+	int recvFrom(void *buffer, int bufferLen, string &sourceAddress, unsigned short &sourcePort, int timeOut = -1) override; //throw(SocketException);
+};
 #endif

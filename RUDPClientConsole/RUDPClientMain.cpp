@@ -35,17 +35,13 @@ int __cdecl main()
 	srand(static_cast<unsigned int>(time(0)));
 
 	// ===================== Begin Connection to Server =====================
-	RUDPStream server = RUDPClient::ConnectToServer(server_ip, DEFAULT_SERVER_PORT, DEFAULT_CLIENT_PORT, 1500);
+	RUDPStream server = RUDPClient::ConnectToServer(server_ip, DEFAULT_SERVER_PORT_NUMBER, DEFAULT_SERVER_PORT_NUMBER + 1000, 1500);
 
 	if (server.IsOpen() == false)
 	{
 		printf("Failed to create server connection.");
 		return BP(0);
 	}
-
-	printf("Created RUDP Server: socket<%d> address<%d.%d.%d.%d.%d.%d.%d.%d.%d.%d>\n", static_cast<int>(server.mSocket)
-		, (uint8_t)(server.mToAddress.sa_data[0]), (uint8_t)(server.mToAddress.sa_data[1]), (uint8_t)(server.mToAddress.sa_data[2]), (uint8_t)(server.mToAddress.sa_data[3]), (uint8_t)(server.mToAddress.sa_data[4])
-		, (uint8_t)(server.mToAddress.sa_data[5]), (uint8_t)(server.mToAddress.sa_data[6]), (uint8_t)(server.mToAddress.sa_data[7]), (uint8_t)(server.mToAddress.sa_data[8]), (uint8_t)(server.mToAddress.sa_data[9]));
 
 	// Notify that connection is reached
 	printf("Client-Server Connection Established.\n");
