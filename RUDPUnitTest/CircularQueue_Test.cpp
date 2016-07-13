@@ -30,7 +30,7 @@ namespace RUDPUnitTest
 			Assert::IsFalse(hasSizeChanged);
 
 			Assert::ExpectException<std::exception>([&] { queue.PopBack(); });
-			Assert::ExpectException<std::exception>([&] { queue.Top(); });
+			Assert::ExpectException<std::exception>([&] { queue.Back(); });
 			Assert::ExpectException<std::exception>([&] { queue[0]; });
 
 			// ========== One Element ==========
@@ -50,8 +50,8 @@ namespace RUDPUnitTest
 			Assert::IsFalse(queue.IsFull());
 			Assert::AreEqual(queue.Size(), 1U);
 
-			Assert::AreEqual(queue.Top(), items[0]);
-			Assert::ExpectException<std::exception>([&] { queue.Top(1); });
+			Assert::AreEqual(queue.Back(), items[0]);
+			Assert::ExpectException<std::exception>([&] { queue.Back(1); });
 			Assert::AreEqual(queue[0], items[0]);
 			Assert::ExpectException<std::exception>([&] { queue[1]; });
 
@@ -68,7 +68,7 @@ namespace RUDPUnitTest
 			Assert::IsFalse(hasSizeChanged);
 
 			Assert::ExpectException<std::exception>([&] { queue.PopBack(); });
-			Assert::ExpectException<std::exception>([&] { queue.Top(); });
+			Assert::ExpectException<std::exception>([&] { queue.Back(); });
 			Assert::ExpectException<std::exception>([&] { queue[0]; });
 
 			// ====== Multiple Elements =====
@@ -83,8 +83,8 @@ namespace RUDPUnitTest
 			Assert::IsFalse(queue.IsFull());
 			Assert::AreEqual(queue.Size(), 1U);
 
-			Assert::AreEqual(queue.Top(), items[0]);
-			Assert::ExpectException<std::exception>([&] { queue.Top(1); });
+			Assert::AreEqual(queue.Back(), items[0]);
+			Assert::ExpectException<std::exception>([&] { queue.Back(1); });
 			Assert::AreEqual(queue[0], items[0]);
 			Assert::ExpectException<std::exception>([&] { queue[1]; });
 
@@ -98,9 +98,9 @@ namespace RUDPUnitTest
 			Assert::IsFalse(queue.IsFull());
 			Assert::AreEqual(queue.Size(), 2U);
 
-			Assert::AreEqual(queue.Top(), items[0]);
-			Assert::AreEqual(queue.Top(1), items[1]);
-			Assert::ExpectException<std::exception>([&] { queue.Top(2); });
+			Assert::AreEqual(queue.Back(), items[0]);
+			Assert::AreEqual(queue.Back(1), items[1]);
+			Assert::ExpectException<std::exception>([&] { queue.Back(2); });
 			Assert::AreEqual(queue[0], items[1]);
 			Assert::AreEqual(queue[1], items[0]);
 			Assert::ExpectException<std::exception>([&] { queue[2]; });
@@ -119,8 +119,8 @@ namespace RUDPUnitTest
 			Assert::IsFalse(queue.IsFull());
 			Assert::AreEqual(queue.Size(), 1U);
 
-			Assert::AreEqual(queue.Top(), items[1]);
-			Assert::ExpectException<std::exception>([&] { queue.Top(1); });
+			Assert::AreEqual(queue.Back(), items[1]);
+			Assert::ExpectException<std::exception>([&] { queue.Back(1); });
 			Assert::AreEqual(queue[0], items[1]);
 			Assert::ExpectException<std::exception>([&] { queue[1]; });
 
@@ -137,7 +137,7 @@ namespace RUDPUnitTest
 			Assert::IsFalse(hasSizeChanged);
 
 			Assert::ExpectException<std::exception>([&] { queue.PopBack(); });
-			Assert::ExpectException<std::exception>([&] { queue.Top(); });
+			Assert::ExpectException<std::exception>([&] { queue.Back(); });
 			Assert::ExpectException<std::exception>([&] { queue[0]; });
 
 			// ===== All Elements =====
@@ -152,8 +152,8 @@ namespace RUDPUnitTest
 			Assert::IsFalse(queue.IsFull());
 			Assert::AreEqual(queue.Size(), 1U);
 
-			Assert::AreEqual(queue.Top(), items[0]);
-			Assert::ExpectException<std::exception>([&] { queue.Top(1); });
+			Assert::AreEqual(queue.Back(), items[0]);
+			Assert::ExpectException<std::exception>([&] { queue.Back(1); });
 			Assert::AreEqual(queue[0], items[0]);
 			Assert::ExpectException<std::exception>([&] { queue[1]; });
 
@@ -167,9 +167,9 @@ namespace RUDPUnitTest
 			Assert::IsFalse(queue.IsFull());
 			Assert::AreEqual(queue.Size(), 2U);
 
-			Assert::AreEqual(queue.Top(), items[0]);
-			Assert::AreEqual(queue.Top(1), items[1]);
-			Assert::ExpectException<std::exception>([&] { queue.Top(2); });
+			Assert::AreEqual(queue.Back(), items[0]);
+			Assert::AreEqual(queue.Back(1), items[1]);
+			Assert::ExpectException<std::exception>([&] { queue.Back(2); });
 			Assert::AreEqual(queue[0], items[1]);
 			Assert::AreEqual(queue[1], items[0]);
 			Assert::ExpectException<std::exception>([&] { queue[2]; });
@@ -184,10 +184,10 @@ namespace RUDPUnitTest
 			Assert::IsFalse(queue.IsFull());
 			Assert::AreEqual(queue.Size(), 3U);
 
-			Assert::AreEqual(queue.Top(), items[0]);
-			Assert::AreEqual(queue.Top(1), items[1]);
-			Assert::AreEqual(queue.Top(2), items[2]);
-			Assert::ExpectException<std::exception>([&] { queue.Top(3); });
+			Assert::AreEqual(queue.Back(), items[0]);
+			Assert::AreEqual(queue.Back(1), items[1]);
+			Assert::AreEqual(queue.Back(2), items[2]);
+			Assert::ExpectException<std::exception>([&] { queue.Back(3); });
 			Assert::AreEqual(queue[0], items[2]);
 			Assert::AreEqual(queue[1], items[1]);
 			Assert::AreEqual(queue[2], items[0]);
@@ -203,11 +203,11 @@ namespace RUDPUnitTest
 			Assert::IsTrue(queue.IsFull());
 			Assert::AreEqual(queue.Size(), 4U);
 
-			Assert::AreEqual(queue.Top(), items[0]);
-			Assert::AreEqual(queue.Top(1), items[1]);
-			Assert::AreEqual(queue.Top(2), items[2]);
-			Assert::AreEqual(queue.Top(3), items[3]);
-			Assert::ExpectException<std::exception>([&] { queue.Top(4); });
+			Assert::AreEqual(queue.Back(), items[0]);
+			Assert::AreEqual(queue.Back(1), items[1]);
+			Assert::AreEqual(queue.Back(2), items[2]);
+			Assert::AreEqual(queue.Back(3), items[3]);
+			Assert::ExpectException<std::exception>([&] { queue.Back(4); });
 			Assert::AreEqual(queue[0], items[3]);
 			Assert::AreEqual(queue[1], items[2]);
 			Assert::AreEqual(queue[2], items[1]);
@@ -223,11 +223,11 @@ namespace RUDPUnitTest
 			Assert::IsTrue(queue.IsFull());
 			Assert::AreEqual(queue.Size(), 4U);
 
-			Assert::AreEqual(queue.Top(), items[0]);
-			Assert::AreEqual(queue.Top(1), items[1]);
-			Assert::AreEqual(queue.Top(2), items[2]);
-			Assert::AreEqual(queue.Top(3), items[3]);
-			Assert::ExpectException<std::exception>([&] { queue.Top(4); });
+			Assert::AreEqual(queue.Back(), items[0]);
+			Assert::AreEqual(queue.Back(1), items[1]);
+			Assert::AreEqual(queue.Back(2), items[2]);
+			Assert::AreEqual(queue.Back(3), items[3]);
+			Assert::ExpectException<std::exception>([&] { queue.Back(4); });
 			Assert::AreEqual(queue[0], items[3]);
 			Assert::AreEqual(queue[1], items[2]);
 			Assert::AreEqual(queue[2], items[1]);
@@ -245,11 +245,11 @@ namespace RUDPUnitTest
 			Assert::IsTrue(queue.IsFull());
 			Assert::AreEqual(queue.Size(), 4U);
 
-			Assert::AreEqual(queue.Top(), items[1]);
-			Assert::AreEqual(queue.Top(1), items[2]);
-			Assert::AreEqual(queue.Top(2), items[3]);
-			Assert::AreEqual(queue.Top(3), items[4]);
-			Assert::ExpectException<std::exception>([&] { queue.Top(4); });
+			Assert::AreEqual(queue.Back(), items[1]);
+			Assert::AreEqual(queue.Back(1), items[2]);
+			Assert::AreEqual(queue.Back(2), items[3]);
+			Assert::AreEqual(queue.Back(3), items[4]);
+			Assert::ExpectException<std::exception>([&] { queue.Back(4); });
 			Assert::AreEqual(queue[0], items[4]);
 			Assert::AreEqual(queue[1], items[3]);
 			Assert::AreEqual(queue[2], items[2]);
@@ -265,10 +265,10 @@ namespace RUDPUnitTest
 			Assert::IsFalse(queue.IsFull());
 			Assert::AreEqual(queue.Size(), 3U);
 
-			Assert::AreEqual(queue.Top(), items[2]);
-			Assert::AreEqual(queue.Top(1), items[3]);
-			Assert::AreEqual(queue.Top(2), items[4]);
-			Assert::ExpectException<std::exception>([&] { queue.Top(3); });
+			Assert::AreEqual(queue.Back(), items[2]);
+			Assert::AreEqual(queue.Back(1), items[3]);
+			Assert::AreEqual(queue.Back(2), items[4]);
+			Assert::ExpectException<std::exception>([&] { queue.Back(3); });
 			Assert::AreEqual(queue[0], items[4]);
 			Assert::AreEqual(queue[1], items[3]);
 			Assert::AreEqual(queue[2], items[2]);
@@ -285,11 +285,11 @@ namespace RUDPUnitTest
 			Assert::IsTrue(queue.IsFull());
 			Assert::AreEqual(queue.Size(), 4U);
 
-			Assert::AreEqual(queue.Top(), items[2]);
-			Assert::AreEqual(queue.Top(1), items[3]);
-			Assert::AreEqual(queue.Top(2), items[4]);
-			Assert::AreEqual(queue.Top(3), items[5]);
-			Assert::ExpectException<std::exception>([&] { queue.Top(4); });
+			Assert::AreEqual(queue.Back(), items[2]);
+			Assert::AreEqual(queue.Back(1), items[3]);
+			Assert::AreEqual(queue.Back(2), items[4]);
+			Assert::AreEqual(queue.Back(3), items[5]);
+			Assert::ExpectException<std::exception>([&] { queue.Back(4); });
 			Assert::AreEqual(queue[0], items[5]);
 			Assert::AreEqual(queue[1], items[4]);
 			Assert::AreEqual(queue[2], items[3]);
@@ -308,11 +308,11 @@ namespace RUDPUnitTest
 			Assert::IsTrue(queue.IsFull());
 			Assert::AreEqual(queue.Size(), 4U);
 
-			Assert::AreEqual(queue.Top(), items[3]);
-			Assert::AreEqual(queue.Top(1), items[4]);
-			Assert::AreEqual(queue.Top(2), items[5]);
-			Assert::AreEqual(queue.Top(3), items[6]);
-			Assert::ExpectException<std::exception>([&] { queue.Top(4); });
+			Assert::AreEqual(queue.Back(), items[3]);
+			Assert::AreEqual(queue.Back(1), items[4]);
+			Assert::AreEqual(queue.Back(2), items[5]);
+			Assert::AreEqual(queue.Back(3), items[6]);
+			Assert::ExpectException<std::exception>([&] { queue.Back(4); });
 			Assert::AreEqual(queue[0], items[6]);
 			Assert::AreEqual(queue[1], items[5]);
 			Assert::AreEqual(queue[2], items[4]);
@@ -328,10 +328,10 @@ namespace RUDPUnitTest
 			Assert::IsFalse(queue.IsFull());
 			Assert::AreEqual(queue.Size(), 3U);
 
-			Assert::AreEqual(queue.Top(), items[4]);
-			Assert::AreEqual(queue.Top(1), items[5]);
-			Assert::AreEqual(queue.Top(2), items[6]);
-			Assert::ExpectException<std::exception>([&] { queue.Top(3); });
+			Assert::AreEqual(queue.Back(), items[4]);
+			Assert::AreEqual(queue.Back(1), items[5]);
+			Assert::AreEqual(queue.Back(2), items[6]);
+			Assert::ExpectException<std::exception>([&] { queue.Back(3); });
 			Assert::AreEqual(queue[0], items[6]);
 			Assert::AreEqual(queue[1], items[5]);
 			Assert::AreEqual(queue[2], items[4]);
@@ -346,9 +346,9 @@ namespace RUDPUnitTest
 			Assert::IsFalse(queue.IsFull());
 			Assert::AreEqual(queue.Size(), 2U);
 
-			Assert::AreEqual(queue.Top(), items[5]);
-			Assert::AreEqual(queue.Top(1), items[6]);
-			Assert::ExpectException<std::exception>([&] { queue.Top(2); });
+			Assert::AreEqual(queue.Back(), items[5]);
+			Assert::AreEqual(queue.Back(1), items[6]);
+			Assert::ExpectException<std::exception>([&] { queue.Back(2); });
 			Assert::AreEqual(queue[0], items[6]);
 			Assert::AreEqual(queue[1], items[5]);
 			Assert::ExpectException<std::exception>([&] { queue[2]; });
@@ -362,8 +362,8 @@ namespace RUDPUnitTest
 			Assert::IsFalse(queue.IsFull());
 			Assert::AreEqual(queue.Size(), 1U);
 
-			Assert::AreEqual(queue.Top(), items[6]);
-			Assert::ExpectException<std::exception>([&] { queue.Top(1); });
+			Assert::AreEqual(queue.Back(), items[6]);
+			Assert::ExpectException<std::exception>([&] { queue.Back(1); });
 			Assert::AreEqual(queue[0], items[6]);
 			Assert::ExpectException<std::exception>([&] { queue[1]; });
 
@@ -376,7 +376,7 @@ namespace RUDPUnitTest
 			Assert::IsFalse(queue.IsFull());
 			Assert::AreEqual(queue.Size(), 0U);
 
-			Assert::ExpectException<std::exception>([&] { queue.Top(); });
+			Assert::ExpectException<std::exception>([&] { queue.Back(); });
 			Assert::ExpectException<std::exception>([&] { queue[0]; });
 
 			// PopBack

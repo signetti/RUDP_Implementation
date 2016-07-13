@@ -34,7 +34,7 @@ public:
 	}
 	const T& operator[](uint32_t index) const { return const_cast<CircularQueue*>(this)->operator[](index); }
 
-	T& Top(const uint32_t& offsetFromEnd = 0U) 
+	T& Back(const uint32_t& offsetFromEnd = 0U) 
 	{
 		// Check for valid index
 		if (offsetFromEnd >= mSize)
@@ -47,7 +47,7 @@ public:
 		assert(properIndex >= 0 && properIndex < QueueSize);
 		return mQueue[properIndex];
 	}
-	const T& Top(const uint32_t& offsetFromEnd = 0U) const { return const_cast<CircularQueue*>(this)->Top(offsetFromEnd); }
+	const T& Back(const uint32_t& offsetFromEnd = 0U) const { return const_cast<CircularQueue*>(this)->Back(offsetFromEnd); }
 
 	// Returns true if the size has changed
 	bool Pop()

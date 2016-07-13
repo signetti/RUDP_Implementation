@@ -3,12 +3,12 @@
 #include "RUDPStream.h"
 #include "RPacket.h"
 
-RUDPStream RUDPClient::ConnectToServer(const char * ip, unsigned short port, unsigned short /*clientPort*/, uint32_t maxConnectionTimeOut)
+RUDPStream RUDPClient::ConnectToServer(const char * ip, unsigned short port, unsigned short clientPort, uint32_t maxConnectionTimeOut)
 {
 	std::string serverAddress(ip);
 	unsigned short serverPort(port);
 
-	shared_ptr<UDPSocket> serverSocket = make_shared<UDPSocket>();
+	shared_ptr<UDPSocket> serverSocket = make_shared<UDPSocket>(clientPort);
 	/** Perform Three-way Hand-shaking
 	*	This works as follows
 	*	 - Client sends message with SeqNum X
@@ -83,24 +83,12 @@ RUDPStream RUDPClient::ConnectToServer(const char * ip, unsigned short port, uns
 				printf("Server Message Received: ip<%s> port<%d>\n", fromAddress.c_str(), fromPort);
 				break;
 			}
-			else if (WSAGetLastError() != WSAEWOULDBLOCK)
+			else
 			{
 				printf("recvfrom produced error: %ld\n", WSAGetLastError());
-			}
-
-			// Sleep for a very short period, so as not to take up CPU power
-			Sleep(1);
-
-			// Check if Request timed-out
-			if (std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - timeSentToServer).count() >= maxConnectionTimeOut)
-			{
 				// Establishing connection timed-out. Return unsuccessful.
 				printf("Establishing Connection Timed Out.\n");
 				return RUDPStream::InvalidStream();
-			}
-			else
-			{
-				assert(false);
 			}
 		}
 

@@ -133,29 +133,16 @@ union ackbitfield_t
 		}
 	}
 	
-	/*
-	ackbitfield_t() : bitfield() {}
-	ackbitfield_t(uint32_t bits) : bitfield(bits) {}
-	bool operator[](uint32_t bit_number) const
+	std::string ToString()
 	{
-		assert(bit_number < 32);
-		uint32_t bit_mask = (std::uint32_t(1) << bit_number);
-		return (bitfield & bit_mask) != 0;
+		std::stringstream message;
+		int i;
+		for (i = 0; i < 32; ++i)
+		{
+			message << (this->operator[](i)) ? '1' : '0';
+		}
+		return message.str();
 	}
-	void Set(uint32_t bit_number, bool value)
-	{
-		assert(bit_number < 32);
-		if (value)
-		{
-			uint32_t bit_mask = (std::uint32_t(1) << bit_number);
-			bitfield |= bit_mask;
-		}
-		else
-		{
-			uint32_t bit_mask = ~(std::uint32_t(1) << bit_number);
-			bitfield &= bit_mask;
-		}
-	}*/
 };
 static_assert(sizeof(ackbitfield_t) == 4, "The ackbitfield_t union is not 4 bytes");
 

@@ -82,10 +82,6 @@ int __cdecl main()
 			printf("Failed to send datagram\n");
 			//return BP(1);
 		}
-		else
-		{
-			printf("%s\n\n", TEST_MESSAGE.c_str());
-		}
 
 
 		Sleep((rand() % 1000) + 2000);

@@ -4,6 +4,17 @@
 #include <assert.h>
 #include <time.h>
 
+
+#define FOREGROUND_CYAN	FOREGROUND_BLUE | FOREGROUND_GREEN
+#define FOREGROUND_YELLOW	FOREGROUND_GREEN |FOREGROUND_RED
+
+#define printf_COLOR(Color,...) \
+	SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), Color | FOREGROUND_INTENSITY);	\
+	printf(__VA_ARGS__);	\
+	SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), FOREGROUND_BLUE | FOREGROUND_GREEN | FOREGROUND_RED)
+
+#define printf_ERROR(...)	printf_COLOR(FOREGROUND_RED, __VA_ARGS__);
+
 RUDPStream::RUDPStream(const shared_ptr<UDPSocket>& socket, std::string toAddress, unsigned short toPort
 	, const uint32_t& senderSequenceNumber, const uint32_t& receiverSequenceNumber, uint32_t maxConnectionTimeOut)
 	: mSocket(socket), mToAddress(toAddress), mToPort(toPort), mSequenceNumber(senderSequenceNumber)
@@ -22,8 +33,7 @@ RUDPStream::RUDPStream(const shared_ptr<UDPSocket>& socket, std::string toAddres
 
 RUDPStream RUDPStream::InvalidStream()
 {
-	RUDPStream invalid(make_shared<UDPSocket>(), "", 0, 0,0,0);
-	invalid.Close();
+	RUDPStream invalid(shared_ptr<UDPSocket>(), "", 0, 0,0,0);
 	return invalid;
 }
 
@@ -89,18 +99,20 @@ int RUDPStream::Send(const char * data, uint32_t sizeOfData)
 	return Send(reinterpret_cast<const uint8_t *>(data), sizeOfData);
 }
 
-// Get current date/time, format is YYYY-MM-DD.HH:mm:ss
-const std::string currentDateTime()
+const uint64_t currentTime(bool reset = false)
 {
-	time_t     now = time(0);
-	struct tm  tstruct;
-	char       buf[80];
-	localtime_s(&tstruct, &now);
-	// Visit http://en.cppreference.com/w/cpp/chrono/c/strftime
-	// for more information about date/time format
-	strftime(buf, sizeof(buf), "%Y-%m-%d.%X", &tstruct);
+	// DEBUG: Record time in between
+	static std::chrono::high_resolution_clock::time_point startTime = std::chrono::high_resolution_clock::now();
 
-	return buf;
+	if (reset)
+	{
+		startTime = std::chrono::high_resolution_clock::now();
+		return 0;
+	}
+	else
+	{
+		return std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - startTime).count();
+	}
 }
 
 bool RUDPStream::IsConnectionTimeOut(std::chrono::high_resolution_clock::time_point startTime, int32_t maxTimeOutMS, uint64_t* OutDuration)
@@ -121,53 +133,39 @@ bool RUDPStream::ReceiveRPacket(uint32_t & OutBytesReceived, RPacket & OutPacket
 {
 	int bytesReceived;
 	bool isSuccess;
-	std::chrono::high_resolution_clock::time_point startTime = std::chrono::high_resolution_clock::now();
-	uint64_t timeDiff = 0;
-	//printf("Time: ");
 	std::string sourceAddress;
 	unsigned short sourcePort;
 
-	do
-	{
-		//printf("%lld...", timeDiff);
-		// Get Incoming Packets
-		bytesReceived = mSocket->recvFrom(reinterpret_cast<char *>(mBuffer), sBufferSize, sourceAddress, sourcePort, maxTimeOutMS);
+	// Get Incoming Packets
+	bytesReceived = mSocket->recvFrom(reinterpret_cast<char *>(mBuffer), sBufferSize, sourceAddress, sourcePort, maxTimeOutMS);
 
-		// Record Received Bytes
-		OutBytesReceived = (bytesReceived > 0) ? static_cast<uint32_t>(bytesReceived) : 0U;
+	// Record Received Bytes
+	OutBytesReceived = (bytesReceived > 0) ? static_cast<uint32_t>(bytesReceived) : 0U;
 
-		// Check if Packet is Received
-		if (bytesReceived > 0)
-		{	// Packet has been received!
+	// Check if Packet is Received
+	if (bytesReceived > 0)
+	{	// Packet has been received!
 
-			// Convert bytes to RUDP packet information
-			isSuccess = OutPacket.Deserialize(mBuffer);
+		// Convert bytes to RUDP packet information
+		isSuccess = OutPacket.Deserialize(mBuffer);
 
-			// Check if Packet is RUDP Packet
-			if (!isSuccess)
-			{	// Packet is not an RUDP Packet, ignore...
-				printf("Not an RUDP Packet: expected id<%d>, actual id<%d>\n", OutPacket.RUDP_ID, OutPacket.Id());
-			}
-			else
-			{	// RPacket successfully received. Return successful
-
-				// DEBUG: For Debugging Purposes only
-				printf("---- Packet Rcvd [%s]: seq<%d> ack<%d> ack_bit<%X> msg_id<%d> frag<%d> num_bytes_rcvd<%d>\n"
-					, currentDateTime().c_str(), OutPacket.Sequence(), OutPacket.Ack(), OutPacket.AckBitfield().bitfield
-					, OutPacket.MessageId(), OutPacket.FragmentCount(), static_cast<uint32_t>(OutPacket.Buffer().size()));
-
-				return true;
-			}
+		// Check if Packet is RUDP Packet
+		if (!isSuccess)
+		{	// Packet is not an RUDP Packet, ignore...
+			printf_ERROR(".... Not an RUDP Packet: expected id<%d>, actual id<%d>\n", OutPacket.RUDP_ID, OutPacket.Id());
 		}
-		else if (WSAGetLastError() != WSAEWOULDBLOCK)
-		{	// Error Reported!
-			printf("recvfrom produced error: %ld\n", WSAGetLastError());
-		}
+		else
+		{	// RPacket successfully received. Return successful
 
-		// Sleep to give CPU some rest
-		Sleep(1);
-	} while (!IsConnectionTimeOut(startTime, maxTimeOutMS, &timeDiff));
-	//printf("\n");
+			// DEBUG: For Debugging Purposes only
+			printf("---- Rcvd [%5lld us]: ", currentTime()); 
+			printf_COLOR(FOREGROUND_YELLOW, "ack<%d> ", OutPacket.Ack());
+			printf_COLOR(FOREGROUND_CYAN,"seq<%d> ", OutPacket.Sequence()); 
+			printf_COLOR(FOREGROUND_YELLOW, "bit<%s> ", OutPacket.AckBitfield().ToString().c_str());
+			printf("msg_id<%d> frag<%d> bytes_rcvd<%d>\n", OutPacket.MessageId(), OutPacket.FragmentCount(), static_cast<uint32_t>(OutPacket.Buffer().size()));
+			return true;
+		}
+	}
 
 	// Connection Timed-out
 	return false;
@@ -191,7 +189,7 @@ bool RUDPStream::SendRPacket(uint32_t& OutBytesSent, const RPacket & packet)
 	}
 	catch (SocketException ex)
 	{
-		printf("sendto failed with error: %d %s\n", WSAGetLastError(), ex.what());
+		printf_ERROR(".... sendto failed with error: %d %s\n", WSAGetLastError(), ex.what());
 		return false;
 	}
 
@@ -199,8 +197,8 @@ bool RUDPStream::SendRPacket(uint32_t& OutBytesSent, const RPacket & packet)
 	OutBytesSent = (packetSize > 0) ? static_cast<uint32_t>(packetSize) : 0U;
 
 	// DEBUG: For Debugging Purposes only
-	printf("---- Packet Sent [%s]: seq<%d> ack<%d> ack_bit<%X> msg_id<%d> frag<%d> num_bytes_sent<%d>\n"
-		, currentDateTime().c_str(), packet.Sequence(), packet.Ack(), packet.AckBitfield().bitfield
+	printf("++++ Sent [%5lld us]: seq<%d> ack<%d> bit<%s> msg_id<%d> frag<%d> bytes_sent<%d>\n"
+		, currentTime(), packet.Sequence(), packet.Ack(), packet.AckBitfield().ToString().c_str()
 		, packet.MessageId(), packet.FragmentCount(), static_cast<uint32_t>(packet.Buffer().size()));
 
 	// Return Success!
@@ -240,8 +238,9 @@ int RUDPStream::Send(const uint8_t * data, uint32_t sizeOfData)
 	++mMessageId;
 
 	// DEBUG: For Debugging Purposes only
-	printf("==== Begin Sending to %s:%d [%s]: seq_num<%d> remote_seq_num<%d> msg_id<%d> max_time<%d>\n"
-		, mToAddress.c_str(), mToPort, currentDateTime().c_str(), mSequenceNumber, mRemoteSequenceNumber, mMessageId, mMaxConnectionTimeOut);
+	currentTime(true);
+	printf("==== Begin Sending to %s:%d: seq_num<%d> remote_seq_num<%d> msg_id<%d> max_time<%d>\n"
+		, mToAddress.c_str(), mToPort, mSequenceNumber, mRemoteSequenceNumber, mMessageId, mMaxConnectionTimeOut);
 
 	// Check if Fragmentation is Required
 	if (sizeOfData <= sMaximumDataSize)
@@ -260,7 +259,7 @@ int RUDPStream::Send(const uint8_t * data, uint32_t sizeOfData)
 		}
 		catch (SocketException ex)
 		{
-			printf("sendto failed with error: %s\n", ex.what());
+			printf_ERROR(".... sendto failed with error: %s\n", ex.what());
 			return false;
 		}
 		totalBytesSent = packetSize;
@@ -288,17 +287,15 @@ int RUDPStream::Send(const uint8_t * data, uint32_t sizeOfData)
 
 
 		// Initialize "Sliding Window" characteristics
-		ackbitfield_t sentPacketsAckBitfield(true);							// Tracks the Received Packets from the Receiver and sets the AckBitfield accordingly
-		bool isMostRecentAcknowledged;
-		ackbitfield_t recvdPacketsAckBitfield(true);						// Tracks the Sent Packets Acknowledged by the Receiver
+		ackbitfield_t localAcknowledgedBitfield(true);							// Tracks the Received Packets from the Receiver and sets the AckBitfield accordingly
+		bool isMostRecentAcknowledged = false;
+		ackbitfield_t remoteAcknowledgedBitfield(true);						// Tracks the Sent Packets Acknowledged by the Receiver
 		SlidingWindow window;												// Sliding Window used to track the state of the Sent Packets
 		PacketFrame currentFrame;
 		PacketFrame poppedFrame;
 		//std::vector<PacketFrame> packetsLost;
 
 		// Initialize Acknowledgement characteristics
-		std::chrono::high_resolution_clock::time_point lastTimeReceivedPacket = std::chrono::high_resolution_clock::now();
-
 		uint32_t lastReceivedRemoteSequenceNumber = mRemoteSequenceNumber - 1;
 
 		// Send with fragment data
@@ -312,7 +309,7 @@ int RUDPStream::Send(const uint8_t * data, uint32_t sizeOfData)
 			numOfBytesToSend = (currentSizeOfData < sizeOfPacketToSend) ? currentSizeOfData : sizeOfPacketToSend;
 
 			// Create Packet Data (of appropriate size)
-			packet.Initialize(mSequenceNumber, lastReceivedRemoteSequenceNumber + 1, recvdPacketsAckBitfield, mMessageId, numberOfFragments, currentDataLocation, numOfBytesToSend);
+			packet.Initialize(mSequenceNumber, lastReceivedRemoteSequenceNumber + 1, remoteAcknowledgedBitfield, mMessageId, numberOfFragments, currentDataLocation, numOfBytesToSend);
 			isSuccess = SendRPacket(bytesSent, packet);
 			assert(isSuccess);		// No Reason for this to fail...
 
@@ -332,13 +329,18 @@ int RUDPStream::Send(const uint8_t * data, uint32_t sizeOfData)
 					//packetsLost.push_back(poppedFrame);
 					mSequenceNumber += numberOfFragments - fragment;
 					mRemoteSequenceNumber += numberOfFragments;
+
+					printf("==== Sending Failed. No acknowledgement received during send before escaping window.\n");
+
+					printf("==== Final State: [% 5lld us]: seq_num<%d> remote_seq_num<%d> msg_id<%d> max_time<%d> msg_size<%d> bytes_sent<%d>\n"
+						, currentTime(), mSequenceNumber, mRemoteSequenceNumber, mMessageId, mMaxConnectionTimeOut, sizeOfData, totalBytesSent);
 					return -1;
 				}
 			}
 
 			// Update Acknowledgement Bits (Shift bits same as Sliding Window)
-			sentPacketsAckBitfield.bitfield <<= 1;
-			assert(sentPacketsAckBitfield.bit00 == false);		// Bit-shifting should initialize bit00 to 0, which is false.
+			localAcknowledgedBitfield.bitfield <<= 1;
+			localAcknowledgedBitfield.bit00 = isMostRecentAcknowledged;
 
 			// Update Sequence Number
 			++mSequenceNumber;
@@ -348,11 +350,6 @@ int RUDPStream::Send(const uint8_t * data, uint32_t sizeOfData)
 			currentDataLocation += numOfBytesToSend;
 			currentSizeOfData -= numOfBytesToSend;
 			totalBytesSent += bytesSent;
-
-			// DEBUG: For Debug Purposes only
-			//printf("message sent [%d bytes]:\t(seq:%d ack:%d ack_bit:%d msg_size:%d)\n"
-			//	, bytesSent, packet.Sequence(), packet.Ack(), packet.AckBitfield().bitfield, numOfBytesToSend);
-
 
 			// ====================================================================================
 			// ============================ Receive Acknowledgement ===============================
@@ -364,11 +361,8 @@ int RUDPStream::Send(const uint8_t * data, uint32_t sizeOfData)
 				// Determine conditions if the last packet is being sent
 				if (fragment >= numberOfFragments - 1)
 				{	// The last packet has been sent, handle receiving of packets accordingly
-					// Calculate Time left to Wait
-					uint32_t timeSinceLastReceived = static_cast<uint32_t>((std::chrono::high_resolution_clock::now() - lastTimeReceivedPacket).count());
-
 					// Wait on Incoming Packets
-					isSuccess = ReceiveRPacket(packet, mMaxConnectionTimeOut - timeSinceLastReceived);
+					isSuccess = ReceiveRPacket(packet, mMaxConnectionTimeOut);
 				}
 				else
 				{	// More packets to be sent, Check (but do not wait) on Incoming Packets
@@ -377,22 +371,19 @@ int RUDPStream::Send(const uint8_t * data, uint32_t sizeOfData)
 
 				if (isSuccess)
 				{	// RUDP Packet Received!
-					assert(packet.MessageId() == mMessageId);	// Should be consistent
 
 					if (packet.Sequence() < mRemoteSequenceNumber)
 					{	// Old Packet received...
-						printf("Received packet for new message detected, ignored...\n");
+						printf_ERROR(".... Received packet for old message, ignored...\n");
 						continue;
 					}
 					else if (packet.Sequence() >= mRemoteSequenceNumber + numberOfFragments)
 					{	// Packet outside of range received...
-						printf("Received packet for new message detected, ignored...\n");
+						printf_ERROR(".... Received packet for new message detected, ignored...\n");
 						continue;
 					}
 
-					// Record time as most recent received packet!
-					lastTimeReceivedPacket = std::chrono::high_resolution_clock::now();
-
+					assert(packet.MessageId() == mMessageId);	// Should be consistent
 
 					// =================== Handle Sequence Number =================
 
@@ -402,20 +393,26 @@ int RUDPStream::Send(const uint8_t * data, uint32_t sizeOfData)
 					if (packetOffset > 0)
 					{	// Update last ack received to this packet's sequence
 
+						// DEBUG: For Debug Purposes Only
+						if (packetOffset != 1)
+						{
+							printf_ERROR(".... Packet Re-ordering Detected! expected<%d> actual<%d>\n", lastReceivedRemoteSequenceNumber + 1, packet.Sequence());
+						}
+
 						// Create Bitmask to check all the ack_bits that will be shifted off (starting from the end bit31)
 						uint32_t bit_mask = ~(0U);	// All start as true (1)
 						bit_mask >>= packetOffset;	// Make the last N bits equal false (0)... this will be our mask to check if the last N bits are true
 
-						if (~(recvdPacketsAckBitfield.bitfield | bit_mask) != 0U)
+						if (~(remoteAcknowledgedBitfield.bitfield | bit_mask) != 0U)
 						{	// If the last N bits do not all equal true (N = packetOffset), then at least one packet shifted was not acknowledged
 
 							// TODO: Handle unacknowledged packet...
-							printf("Packet Loss detected, but currently ignoring...\n");
+							printf_ERROR(".... Packet Loss detected, but currently ignoring...\n");
 						}
 
 						// Include all 32 results of acknowledged bitfield received (using OR gate logic)
-						recvdPacketsAckBitfield.bitfield <<= packetOffset;
-						recvdPacketsAckBitfield.Set(packetOffset - 1, true);	// The bit for the last Received Remote Sequence Number needs to get set!
+						remoteAcknowledgedBitfield.bitfield <<= packetOffset;
+						remoteAcknowledgedBitfield.Set(packetOffset - 1, true);	// The bit for the last Received Remote Sequence Number needs to get set!
 
 						lastReceivedRemoteSequenceNumber = packet.Sequence();		// Update to latest remote sequence number
 					}
@@ -426,14 +423,14 @@ int RUDPStream::Send(const uint8_t * data, uint32_t sizeOfData)
 
 						if (packetOffset >= RPacket::NumberOfAcksPerPacket)
 						{	// DEBUG: For Debug Purposes Only
-							printf("Ack Received, but not able to Set value...\n");
+							printf_ERROR(".... Ack Received, but not able to Set value...\n");
 						}
 						else
 						{	// Set the ack_bit for the respective acknowledged number received
-							recvdPacketsAckBitfield.Set(packetOffset - 1, true);
+							remoteAcknowledgedBitfield.Set(packetOffset - 1, true);
 							
 							// Include all 32 results of acknowledged bitfield received (using OR gate logic)
-							recvdPacketsAckBitfield.bitfield |= (packet.AckBitfield().bitfield << packetOffset);
+							//recvdPacketsAckBitfield.bitfield |= (packet.AckBitfield().bitfield << packetOffset);
 						}
 					}
 
@@ -456,49 +453,71 @@ int RUDPStream::Send(const uint8_t * data, uint32_t sizeOfData)
 						}
 						else
 						{	// Set respective bit in bit-field
-							sentPacketsAckBitfield.Set(packetOffset - 1, true);
+							localAcknowledgedBitfield.Set(packetOffset - 1, true);
 						}
 
 						// Set the received Ack Number
-						sentPacketsAckBitfield.bitfield |= (packet.AckBitfield().bitfield << packetOffset);	// Set All Acks in received AckBitfield
+						// Include all 32 results of acknowledged bitfield received (using OR gate logic)
+						localAcknowledgedBitfield.bitfield |= (packet.AckBitfield().bitfield << packetOffset);	// Set All Acks in received AckBitfield
 					}
 				}
 				else if(fragment >= numberOfFragments - 1)
 				{	// RUDP Packet not received
-
 					// Assert that there's no Connection Time-Outs
-					uint64_t duration;
-					if (IsConnectionTimeOut(lastTimeReceivedPacket, mMaxConnectionTimeOut, &duration))
-					{
-						// TODO: Handle Connection Time-outs better...
-						printf("No acknowledgement received during send. Connection Timed-Out: max_time<%d> duration<%lld>\n", mMaxConnectionTimeOut, duration);
 
-						mSequenceNumber += numberOfFragments - fragment;
-						mRemoteSequenceNumber += numberOfFragments;
-						return -1;
-					}
+					mSequenceNumber += numberOfFragments - fragment;
+					mRemoteSequenceNumber += numberOfFragments;
+
+					printf("==== Sending Failed. No acknowledgement received during send. Connection Timed-Out\n");
+
+					printf("==== Final State: [% 5lld us]: seq_num<%d> remote_seq_num<%d> msg_id<%d> max_time<%d> msg_size<%d> bytes_sent<%d>\n"
+						, currentTime(), mSequenceNumber, mRemoteSequenceNumber, mMessageId, mMaxConnectionTimeOut, sizeOfData, totalBytesSent);
+					return -1;
+				}
+
+				// DEBUG: For Debugging Purposes only
+				printf_COLOR(FOREGROUND_YELLOW,"          Internal State:   local_ack_bit:  (%d) %s\n"
+					, mSequenceNumber, localAcknowledgedBitfield.ToString().c_str());
+				// DEBUG: For debugging purpose only
+				printf_COLOR(FOREGROUND_CYAN, "          Internal State:   remote_ack_bit: (%d) %s\n"
+					, lastReceivedRemoteSequenceNumber, remoteAcknowledgedBitfield.ToString().c_str());
+
+				// ============== Check Condition to Continue Receiving Packets =================
+				if (fragment >= numberOfFragments - 1)
+				{
+					printf("Exit Condition: isMostRecent=%s localAckBit=%s remoteAckBit=%s expected<%d> current<%d>\n"
+						,(isMostRecentAcknowledged) ?"true":"false"
+						, localAcknowledgedBitfield.IsAll(true) ? "true" : "false"
+						, remoteAcknowledgedBitfield.IsAll(true) ? "true" : "false"
+						, mRemoteSequenceNumber + fragment, lastReceivedRemoteSequenceNumber + 1);
 				}
 
 
-				// ============== Check Condition to Continue Receiving Packets =================
 				if (fragment < numberOfFragments - 1)
 				{	// Still fragments left to send, keep sending
 					break;
 				}
-				else if (isMostRecentAcknowledged && sentPacketsAckBitfield.IsAll(true))
+				else if (isMostRecentAcknowledged && localAcknowledgedBitfield.IsAll(true)
+					&& lastReceivedRemoteSequenceNumber + 1 == mRemoteSequenceNumber + fragment
+					&& remoteAcknowledgedBitfield.IsAll(true))
 				{	// The Second-to-Last fragment: With all acknowledgements received send last fragment packet with all acknowledgements
 					// The Last fragment: With all acknowledgements received, exit the loop successful!
 
-					mRemoteSequenceNumber = lastReceivedRemoteSequenceNumber + 1;
 					break;
 				}
 			}
 		}
+
+		// Successful Sending, update state.
+		//mRemoteSequenceNumber = lastReceivedRemoteSequenceNumber + 1;	// This might work, use other just in case
+		mRemoteSequenceNumber += numberOfFragments;
 	}
 
+
 	// DEBUG: For Debug Purposes Only!
-	printf("==== Successful Sending [%s]: seq_num<%d> remote_seq_num<%d> msg_id<%d> max_time<%d> msg_size<%d> bytes_sent<%d>\n"
-		, currentDateTime().c_str(), mSequenceNumber, mRemoteSequenceNumber, mMessageId, mMaxConnectionTimeOut, sizeOfData, totalBytesSent);
+	printf("==== Successful Sending\n");
+	printf("==== Final State: [% 5lld us]: seq_num<%d> remote_seq_num<%d> msg_id<%d> max_time<%d> msg_size<%d> bytes_sent<%d>\n"
+		, currentTime(), mSequenceNumber, mRemoteSequenceNumber, mMessageId, mMaxConnectionTimeOut, sizeOfData, totalBytesSent);
 
 	assert(currentSizeOfData == 0);				// Number of data left to transmit should be zero!
 
@@ -514,8 +533,8 @@ int RUDPStream::Receive(char * OutBuffer, uint32_t sizeOfBuffer)
 
 	// Initialize "Sliding Window" characteristics
 	uint32_t lastSentPacketAcknowledged = mSequenceNumber - 1;
-	ackbitfield_t sentPacketsAckBitfield(true);								// Tracks the Sent Packets Acknowledged by the Receiver
-	ackbitfield_t recvdPacketsAckBitfield(true);							// Tracks the Received Packets from the Receiver and sets the AckBitfield accordingly
+	ackbitfield_t localAcknowledgedBitfield(true);								// Tracks the Sent Packets Acknowledged by the Receiver
+	ackbitfield_t remoteAcknowledgedBitfield(true);							// Tracks the Received Packets from the Receiver and sets the AckBitfield accordingly
 	
 	PacketFrame currentFrame;
 	PacketFrame poppedFrame;
@@ -532,17 +551,13 @@ int RUDPStream::Receive(char * OutBuffer, uint32_t sizeOfBuffer)
 	bool isFirstPacket = true;
 	int32_t packetOffset;
 
-
-	//std::chrono::high_resolution_clock::time_point timeSinceLastValidPacketReceived = std::chrono::high_resolution_clock::now();
-	//uint32_t timeSinceLastValidPacket;
 	for (;;)
 	{
 		// ====================================================================================
 		// ================================== Receive RPacket =================================
 		// ====================================================================================
 
-		//timeSinceLastValidPacket = static_cast<uint32_t>((std::chrono::high_resolution_clock::now() - timeSinceLastValidPacketReceived).count());
-		isSuccess = ReceiveRPacket(packet, mMaxConnectionTimeOut/*- timeSinceLastValidPacket*/);
+		isSuccess = ReceiveRPacket(packet, mMaxConnectionTimeOut);
 
 		// Connection Timed-Out
 		if (!isSuccess)
@@ -554,9 +569,17 @@ int RUDPStream::Receive(char * OutBuffer, uint32_t sizeOfBuffer)
 				mRemoteSequenceNumber += fragmentCount;
 
 				printf("==== Receiving Failed: Connection Timed-Out ====\n");
+
+				printf("==== Final State [% 5lld us]: seq_num<%d> remote_seq_num<%d> msg_id<%d> max_time<%d> bytes_rcvd<0>\n"
+					, currentTime(), mSequenceNumber, mRemoteSequenceNumber, mMessageId, mMaxConnectionTimeOut);
+
+				return -1;
+			}
+			else
+			{
+				return 0;
 			}
 
-			return 0;
 		}
 
 		// Calculate how many packets ahead this packet is
@@ -567,7 +590,7 @@ int RUDPStream::Receive(char * OutBuffer, uint32_t sizeOfBuffer)
 		// Determine if Packet is within a valid range
 		if (packetOffset < 0 || packetOffset >= RPacket::NumberOfAcksPerPacket)
 		{
-			printf("RUDP Packet is not within a valid range: current<%d>, received<%d>, dif<%d>\n"
+			printf_ERROR(".... RUDP Packet is not within a valid range: current<%d>, received<%d>, dif<%d>\n"
 				, oldestRSNfromWindow, receivedRemoteSequenceNumber, packetOffset);
 
 			continue;
@@ -575,25 +598,18 @@ int RUDPStream::Receive(char * OutBuffer, uint32_t sizeOfBuffer)
 
 		if (receivedRemoteSequenceNumber < mRemoteSequenceNumber)
 		{	// Old Packet received...
-			printf("Packet for new message detected, but ignored...\n");
+			printf_ERROR(".... Packet for new message detected, but ignored...\n");
 			continue;
 		}
 		else if (!isFirstPacket && receivedRemoteSequenceNumber >= mRemoteSequenceNumber + fragmentCount)
 		{	// Packet outside of range received...
-			printf("Packet for new message detected, but ignored...\n");
+			printf_ERROR(".... Packet for new message detected, but ignored...\n");
 			continue;
 		}
 		
 
 		// Assert that the message is correct
 		assert(isFirstPacket || mMessageId == packet.MessageId());
-
-
-		// Assert these functions work!
-		//assert(IsSeq2MoreRecent(oldestRSNfromWindow, receivedRemoteSequenceNumber) == true || oldestRSNfromWindow == receivedRemoteSequenceNumber);
-
-		// Packet is deemed valid, continue...
-		//timeSinceLastValidPacketReceived = std::chrono::high_resolution_clock::now();
 
 		// ============================== Handle First Packet =================================
 
@@ -609,8 +625,10 @@ int RUDPStream::Receive(char * OutBuffer, uint32_t sizeOfBuffer)
 			++mMessageId;
 
 			// DEBUG: For Debugging Purposes only
-			printf("==== Begin Receiving from %s:%d [%s]: seq_num<%d> remote_seq_num<%d> msg_id<%d> max_time<%d>\n"
-				, mToAddress.c_str(), mToPort, currentDateTime().c_str(), mSequenceNumber, mRemoteSequenceNumber, mMessageId, mMaxConnectionTimeOut);
+			currentTime(true);
+			printf("==== Begin Receiving from %s:%d : seq<%d> remote_seq<%d> msg_id<%d> frag<%d> bytes_rcvd<%d> max_time<%d>\n"
+				, mToAddress.c_str(), mToPort, mSequenceNumber, mRemoteSequenceNumber, mMessageId
+				, (int)fragmentCount,packet.Buffer().size(), mMaxConnectionTimeOut);
 		
 		}
 		else
@@ -625,6 +643,12 @@ int RUDPStream::Receive(char * OutBuffer, uint32_t sizeOfBuffer)
 		// Determine what to do with packet
 		if (packetOffset > 0)
 		{	// Packet is newer, adjust window accordingly
+
+			// DEBUG: For Debug Purposes Only
+			if (packetOffset != 1)
+			{
+				printf_ERROR(".... Packet Re-ordering Detected! expected<%d> actual<%d>\n", newestRSNfromWindow + 1, receivedRemoteSequenceNumber);
+			}
 
 			// Shift Window accordingly
 			int32_t i;
@@ -642,8 +666,8 @@ int RUDPStream::Receive(char * OutBuffer, uint32_t sizeOfBuffer)
 				}
 
 				// Update Acknowledgement Bits (Shift bits same as Sliding Window)
-				recvdPacketsAckBitfield.bitfield <<= 1;
-				recvdPacketsAckBitfield.bit00 = window.IsEmpty() || window.Top().IsAcknowledged;
+				remoteAcknowledgedBitfield.bitfield <<= 1;
+				remoteAcknowledgedBitfield.bit00 = window.IsEmpty() || window[0].IsAcknowledged;
 
 				// Update Sliding Window
 				isSuccess = window.PushBack(currentFrame, &poppedFrame);
@@ -655,11 +679,14 @@ int RUDPStream::Receive(char * OutBuffer, uint32_t sizeOfBuffer)
 					{	// Packet was never acknowledged, return unsuccessful submission
 
 						// TODO: Handle packet loss case better...
-						printf("Packet Loss Detected! Receive Cannot complete. . .\n");
+						printf_ERROR(".... Packet Loss Detected! Receive Cannot complete. . .\n");
 						
 						// Adjust expected sequence number
 						mSequenceNumber += fragmentCount;
 						mRemoteSequenceNumber += fragmentCount;
+
+						printf("==== Final State [% 5lld us]: seq_num<%d> remote_seq_num<%d> msg_id<%d> max_time<%d> bytes_rcvd<0>\n"
+							, currentTime(), mSequenceNumber, mRemoteSequenceNumber, mMessageId, mMaxConnectionTimeOut);
 						return -1;
 					}
 					else
@@ -680,9 +707,9 @@ int RUDPStream::Receive(char * OutBuffer, uint32_t sizeOfBuffer)
 			int32_t index = (-1) - packetOffset;//(RPacket::NumberOfAcksPerPacket - 1) + packetOffset;
 
 			// Check if packet is acknowledged
-			if (!recvdPacketsAckBitfield[index])
+			if (!remoteAcknowledgedBitfield[index])
 			{	// Packet not acknowledged, update Packet Frame state
-				recvdPacketsAckBitfield.Set(index, true);
+				remoteAcknowledgedBitfield.Set(index, true);
 				PacketFrame& frame = window[index + 1];
 
 				// Save Buffer in Sequence
@@ -690,17 +717,30 @@ int RUDPStream::Receive(char * OutBuffer, uint32_t sizeOfBuffer)
 			}
 			else
 			{	// Packet already acknowledged, redundant packet ignored...
-				printf("Redundant Packet Detected: seq<%d>\n", receivedRemoteSequenceNumber);
+				printf_ERROR(".... Redundant Packet Detected: seq<%d>\n", receivedRemoteSequenceNumber);
 				continue;
 			}
 		}
 		else
 		{	// Packet is currently newest packet received prior, redunant packet ignored...
-			assert(!window.IsEmpty() || window.Top().IsAcknowledged);
+			assert(!window.IsEmpty() || window.Back().IsAcknowledged);
 
-			printf("Redundant Packet Detected: seq<%d>\n", receivedRemoteSequenceNumber);
+			printf_ERROR(".... Redundant Packet Detected: seq<%d>\n", receivedRemoteSequenceNumber);
 			continue;
 		}
+
+		// DEBUG: For Debugging Purposes only
+		SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), FOREGROUND_GREEN | FOREGROUND_RED | FOREGROUND_INTENSITY);
+		printf("          Internal State:   local_ack_bit:  (%d) %s\n"
+			, lastSentPacketAcknowledged, localAcknowledgedBitfield.ToString().c_str());
+		SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), FOREGROUND_BLUE | FOREGROUND_GREEN | FOREGROUND_RED);
+
+		// DEBUG: For debugging purpose only
+		SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), FOREGROUND_BLUE | FOREGROUND_GREEN | FOREGROUND_INTENSITY);
+		printf("          Internal State:   remote_ack_bit: (%d) %s\n"
+			, receivedRemoteSequenceNumber, remoteAcknowledgedBitfield.ToString().c_str());
+		SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), FOREGROUND_BLUE | FOREGROUND_GREEN | FOREGROUND_RED);
+
 
 		// ============================ Handling Acknowledgements =============================
 		// DEBUG:
@@ -711,7 +751,7 @@ int RUDPStream::Receive(char * OutBuffer, uint32_t sizeOfBuffer)
 
 		if (isFirstPacket)
 		{
-			assert(sentPacketsAckBitfield.bitfield == ~(0U));	// The sent ack_bitfield must all be initialized to true to avoid confusion...
+			assert(localAcknowledgedBitfield.bitfield == ~(0U));	// The sent ack_bitfield must all be initialized to true to avoid confusion...
 			assert(DiffFromSeq1ToSeq2(packet.Ack(), mSequenceNumber) == 0);	// Assert that the two connections are synced...
 			
 			lastSentPacketAcknowledged = mSequenceNumber - 1;
@@ -727,16 +767,16 @@ int RUDPStream::Receive(char * OutBuffer, uint32_t sizeOfBuffer)
 				uint32_t bit_mask = ~(0U);	// All start as true (1)
 				bit_mask >>= packetOffset;	// Make the last N bits equal false (0)... this will be our mask to check if the last N bits are true
 				
-				if (~(sentPacketsAckBitfield.bitfield | bit_mask) != 0U)
+				if (~(localAcknowledgedBitfield.bitfield | bit_mask) != 0U)
 				{	// If the last N bits do not all equal true (N = packetOffset), then at least one packet shifted was not acknowledged
 
 					// TODO: Handle unacknowledged packet...
-					printf("Packet Loss detected, but currently ignoring...\n");
+					printf_ERROR(".... Packet Loss detected, but currently ignoring...\n");
 				}
 
 				// Include all 32 results of acknowledged bitfield received (using OR gate logic)
-				sentPacketsAckBitfield.bitfield <<= packetOffset;
-				sentPacketsAckBitfield.bitfield |= packet.AckBitfield().bitfield;
+				localAcknowledgedBitfield.bitfield <<= packetOffset;
+				localAcknowledgedBitfield.bitfield |= packet.AckBitfield().bitfield;
 
 				// Update last packet acknowledged to this ack number
 				lastSentPacketAcknowledged = packet.Ack();
@@ -747,21 +787,21 @@ int RUDPStream::Receive(char * OutBuffer, uint32_t sizeOfBuffer)
 
 				if (packetOffset >= RPacket::NumberOfAcksPerPacket)
 				{	// DEBUG: For Debug Purposes Only
-					printf("Ack Received, but not able to Set value...\n");
+					printf_ERROR(".... Ack Received, but not able to Set value...\n");
 				}
 				else
 				{	// Set the ack_bit for the respective acknowledged number received
-					sentPacketsAckBitfield.Set(packetOffset - 1, true);
+					localAcknowledgedBitfield.Set(packetOffset - 1, true);
 
 					// Include all 32 results of acknowledged bitfield received (using OR gate logic)
-					sentPacketsAckBitfield.bitfield |= (packet.AckBitfield().bitfield << packetOffset);
+					localAcknowledgedBitfield.bitfield |= (packet.AckBitfield().bitfield << packetOffset);
 				}
 			}
 			else
 			{
 				// Include all 32 results of acknowledged bitfield received (using OR gate logic) in case of update...
-				sentPacketsAckBitfield.bitfield |= packet.AckBitfield().bitfield;
-				printf("Redundant acknowledgement ignored: ack<%d>\n", packet.Ack());
+				localAcknowledgedBitfield.bitfield |= packet.AckBitfield().bitfield;
+				printf_ERROR(".... Redundant acknowledgement ignored: ack<%d>\n", packet.Ack());
 			}
 		}
 
@@ -771,27 +811,33 @@ int RUDPStream::Receive(char * OutBuffer, uint32_t sizeOfBuffer)
 		// ====================================================================================
 
 		// Send Acknowledgement Information
-		packet.Initialize(currentSequenceNumber, newestRSNfromWindow + 1, recvdPacketsAckBitfield, mMessageId, 1, std::vector<uint8_t>());
+		packet.Initialize(currentSequenceNumber, newestRSNfromWindow + 1, remoteAcknowledgedBitfield, mMessageId, 1, std::vector<uint8_t>());
 		isSuccess = SendRPacket(packet);
 		assert(isSuccess);		// No reason for this to fail...
 
 		// Update Sequence Number
 		++currentSequenceNumber;
 
-		// TODO: Add End State to this infinite loop!!!!
+		// DEBUG: For Debug Purposes Only
+		if (currentSequenceNumber >= mSequenceNumber + fragmentCount)
+		{
+			printf("Exit Condition: localAckBit=%s remoteAckBit=%s expected_remote<%d> current<%d>   expected_seq<%d> current<%d>\n"
+				, localAcknowledgedBitfield.IsAll(true) ? "true" : "false"
+				, remoteAcknowledgedBitfield.IsAll(true) ? "true" : "false"
+				, mRemoteSequenceNumber + fragmentCount
+				, newestRSNfromWindow + 1
+				, currentSequenceNumber
+				, lastSentPacketAcknowledged + 1);
+		}
 
 		// Check if all acks received...
-
-
-		if ((newestRSNfromWindow == mRemoteSequenceNumber + fragmentCount - 1) && (recvdPacketsAckBitfield.IsAll(true)))
-		{
-			if ((lastSentPacketAcknowledged == currentSequenceNumber - 1) && (sentPacketsAckBitfield.IsAll(true)))
-			{	// True perfection has been reached in transmitting this message. Break free!
-				// Adjust expected sequence number
-				mSequenceNumber += fragmentCount;
-				mRemoteSequenceNumber += fragmentCount;
-				break;
-			}
+		if ((newestRSNfromWindow + 1 == mRemoteSequenceNumber + fragmentCount) && (remoteAcknowledgedBitfield.IsAll(true))
+			&& (lastSentPacketAcknowledged + 1 == currentSequenceNumber) && (localAcknowledgedBitfield.IsAll(true)))
+		{	// True perfection has been reached in transmitting this message. Break free!
+			// Adjust expected sequence number
+			mSequenceNumber += fragmentCount;
+			mRemoteSequenceNumber += fragmentCount;
+			break;
 		}
 	}
 
@@ -812,18 +858,29 @@ int RUDPStream::Receive(char * OutBuffer, uint32_t sizeOfBuffer)
 
 	if (totalBytesReceived > sizeOfBuffer)
 	{	// TODO: Handle this case better!
-		printf("Bytes received waaay too large: max<%d> rcvd<%d>\n", sizeOfBuffer, totalBytesReceived);
+		printf("==== Receive Failed. Bytes received waaay too large: max<%d> rcvd<%d>\n", sizeOfBuffer, totalBytesReceived);
+
+		printf("==== Final State [% 5lld us]: seq_num<%d> remote_seq_num<%d> msg_id<%d> max_time<%d> bytes_rcvd<%d>\n"
+			, currentTime(), mSequenceNumber, mRemoteSequenceNumber, mMessageId, mMaxConnectionTimeOut, totalBytesReceived);
 		return -1;
 	}
 	else if (totalBytesReceived <= 0)
 	{
-		printf("Bytes received is bad: rcvd<%d>\n", totalBytesReceived);
+		printf("==== Receive Failed. Bytes received is bad: rcvd<%d>\n", totalBytesReceived);
+
+		printf("==== Final State [% 5lld us]: seq_num<%d> remote_seq_num<%d> msg_id<%d> max_time<%d> bytes_rcvd<%d>\n"
+			, currentTime(), mSequenceNumber, mRemoteSequenceNumber, mMessageId, mMaxConnectionTimeOut, totalBytesReceived);
+
+		return -1;
 	}
 	else
 	{	// DEBUG: For Debugging Purposes only
-		printf("==== Successful Receiving [%s]: seq_num<%d> remote_seq_num<%d> msg_id<%d> max_time<%d> bytes_rcvd<%d>\n"
-			, currentDateTime().c_str(), mSequenceNumber, mRemoteSequenceNumber, mMessageId, mMaxConnectionTimeOut, totalBytesReceived);
+		printf("==== Successful Receiving\n");
+
+		printf("==== Final State [% 5lld us]: seq_num<%d> remote_seq_num<%d> msg_id<%d> max_time<%d> bytes_rcvd<%d>\n"
+			, currentTime(), mSequenceNumber, mRemoteSequenceNumber, mMessageId, mMaxConnectionTimeOut, totalBytesReceived);
 	}
+
 	
 	// Copy Sequenced Data into Buffer
 	char * CurrentBufferLocation = OutBuffer;
@@ -855,10 +912,15 @@ bool RUDPStream::Shutdown(int /*how*/)
 
 void RUDPStream::Close()
 {
-	mSocket->Close();
+
+	if (mSocket.get() != nullptr)
+	{
+		mSocket->Close();
+	}
+
 }
 
 bool RUDPStream::IsOpen()
 {
-	return mSocket->IsOpen();
+	return  (mSocket.get() != nullptr) && (mSocket->IsOpen());
 }

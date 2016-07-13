@@ -68,8 +68,35 @@ int __cdecl main()
 			bytesReceived = client.Receive(recvbuf, BUF_SIZE);
 			if (bytesReceived > 0)
 			{
-				std::string message(recvbuf, bytesReceived);
-				printf("%s\n\n", message.c_str());
+				// Minus 1 due to end-of-line byte...
+				std::string message(recvbuf, bytesReceived - 1);
+
+				int index = 0;
+				int msg_size = (int)message.length();
+				for (auto letter : TEST_MESSAGE)
+				{
+					if (index >= msg_size)
+					{
+						break;
+					}
+					if (letter != message[index])
+					{
+						break;
+					}
+					index++;
+				}
+
+				if (index < msg_size)
+				{
+					assert(message != TEST_MESSAGE);
+					printf(".... ERROR: Received Message does not matches Expected Message\ncharacter %2d: \t...%s...\n\n", index
+						, message.substr(((index - 50 >= 0) ? index - 50 : 0),((index + 50 < msg_size) ? index + 50 : msg_size - 1)).c_str());
+				}
+				else
+				{
+					assert(message == TEST_MESSAGE);
+					printf("==== Received Message matches Expected Message ====\n\n");
+				}
 			}
 		}
 		/*

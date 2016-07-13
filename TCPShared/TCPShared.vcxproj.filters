@@ -1,17 +1,25 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <Filter Include="Source Files">
-      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
-      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
-    </Filter>
-    <Filter Include="Header Files">
-      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
-      <Extensions>h;hh;hpp;hxx;hm;inl;inc;xsd</Extensions>
-    </Filter>
     <Filter Include="Resource Files">
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+    <Filter Include="Socket">
+      <UniqueIdentifier>{6edf31fa-020b-44c8-b0ca-287bfe68c657}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="TCP">
+      <UniqueIdentifier>{6c459c70-c8ad-4793-8cda-09892e1154b9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="RUDP">
+      <UniqueIdentifier>{7771659b-8251-4098-8bb7-f68b79a06f4d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Utils">
+      <UniqueIdentifier>{916f37d1-58e6-4b23-ac4d-b10c49f11b40}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Preprocessor">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;hm;inl;inc;xsd</Extensions>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -19,90 +27,90 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="stdafx.h">
-      <Filter>Header Files</Filter>
+      <Filter>Preprocessor</Filter>
     </ClInclude>
     <ClInclude Include="targetver.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="WSAManager.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="TCPStream.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="TCPServer.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="TCPClient.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="StopWatch.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="SharedTestData.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="RPacket.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="RUDPStream.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="RUDPServer.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="RUDPClient.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="ConfigReader.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="SocketUtils.h">
-      <Filter>Header Files</Filter>
+      <Filter>Preprocessor</Filter>
     </ClInclude>
     <ClInclude Include="Socket.h">
-      <Filter>Header Files</Filter>
+      <Filter>Socket</Filter>
+    </ClInclude>
+    <ClInclude Include="WSAManager.h">
+      <Filter>Socket</Filter>
+    </ClInclude>
+    <ClInclude Include="SocketUtils.h">
+      <Filter>Socket</Filter>
+    </ClInclude>
+    <ClInclude Include="TCPStream.h">
+      <Filter>TCP</Filter>
+    </ClInclude>
+    <ClInclude Include="TCPClient.h">
+      <Filter>TCP</Filter>
+    </ClInclude>
+    <ClInclude Include="TCPServer.h">
+      <Filter>TCP</Filter>
+    </ClInclude>
+    <ClInclude Include="ConfigReader.h">
+      <Filter>Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="SharedTestData.h">
+      <Filter>Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="RUDPClient.h">
+      <Filter>RUDP</Filter>
+    </ClInclude>
+    <ClInclude Include="RUDPServer.h">
+      <Filter>RUDP</Filter>
+    </ClInclude>
+    <ClInclude Include="RUDPStream.h">
+      <Filter>RUDP</Filter>
+    </ClInclude>
+    <ClInclude Include="RPacket.h">
+      <Filter>RUDP</Filter>
+    </ClInclude>
+    <ClInclude Include="StopWatch.h">
+      <Filter>Utils</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="stdafx.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="WSAManager.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="TCPStream.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="TCPServer.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="TCPClient.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="StopWatch.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="RPacket.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="RUDPStream.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="RUDPServer.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="RUDPClient.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="ConfigReader.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="Socket.cpp">
+      <Filter>Socket</Filter>
     </ClCompile>
     <ClCompile Include="SocketUtils.cpp">
-      <Filter>Source Files</Filter>
+      <Filter>Socket</Filter>
     </ClCompile>
-    <ClCompile Include="Socket.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="WSAManager.cpp">
+      <Filter>Socket</Filter>
+    </ClCompile>
+    <ClCompile Include="RUDPClient.cpp">
+      <Filter>RUDP</Filter>
+    </ClCompile>
+    <ClCompile Include="RUDPServer.cpp">
+      <Filter>RUDP</Filter>
+    </ClCompile>
+    <ClCompile Include="RUDPStream.cpp">
+      <Filter>RUDP</Filter>
+    </ClCompile>
+    <ClCompile Include="TCPStream.cpp">
+      <Filter>TCP</Filter>
+    </ClCompile>
+    <ClCompile Include="TCPClient.cpp">
+      <Filter>TCP</Filter>
+    </ClCompile>
+    <ClCompile Include="TCPServer.cpp">
+      <Filter>TCP</Filter>
+    </ClCompile>
+    <ClCompile Include="RPacket.cpp">
+      <Filter>RUDP</Filter>
+    </ClCompile>
+    <ClCompile Include="ConfigReader.cpp">
+      <Filter>Utils</Filter>
+    </ClCompile>
+    <ClCompile Include="StopWatch.cpp">
+      <Filter>Utils</Filter>
+    </ClCompile>
+    <ClCompile Include="stdafx.cpp">
+      <Filter>Preprocessor</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

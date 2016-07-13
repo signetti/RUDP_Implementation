@@ -7,7 +7,7 @@
 #include <sstream>
 
 RUDPServer::RUDPServer(std::uint16_t listenPort, std::uint32_t maxConnectionTimeOut)
-	: mListenSocket(make_shared<UDPSocket>(listenPort)), mAvailablePort(listenPort + 1000), mMaxConnectionTimeOut(maxConnectionTimeOut), mAcknowledgeTable()
+	: mListenSocket(make_shared<UDPSocket>(listenPort)), mAvailablePort(listenPort + 1), mMaxConnectionTimeOut(maxConnectionTimeOut), mAcknowledgeTable()
 {
 	// Start-Up the WSA Library
 	WSAManager::StartUp();
@@ -41,6 +41,7 @@ RUDPStream * RUDPServer::Accept()
 	uint32_t ackNum;
 	RPacket data;
 	bool isSuccess;
+
 
 	// Available Open Socket for incoming clients
 	//shared_ptr<UDPSocket> clientSocket = shared_ptr<UDPSocket>(nullptr);
@@ -88,8 +89,9 @@ RUDPStream * RUDPServer::Accept()
 
 	// Listen for any RUDP Packets from clients
 	std::string clientAddress;
-	unsigned short clientPort;
+	unsigned short clientPort = 0;
 
+	bool isClientFound = false;
 
 	// Listen for incoming message
 	for (;;)
@@ -97,22 +99,31 @@ RUDPStream * RUDPServer::Accept()
 		// Sleep for a very short period, so as not to take up CPU power
 		Sleep(1);
 
-		// Get Incoming Packets
-		bytesReceived = mListenSocket->recvFrom(buffer, 512, clientAddress, clientPort, 500/*mMaxConnectionTimeOut*/);
+		if (!isClientFound)
+		{
+			// Get Incoming Packets
+			bytesReceived = mListenSocket->recvFrom(buffer, 512, clientAddress, clientPort, mMaxConnectionTimeOut);
 
-		// Check if packet is received
-		isSuccess = (bytesReceived > 0);
-		if (isSuccess)
-		{	// Packet has been received!
+			// Check if packet is received
+			isSuccess = (bytesReceived > 0);
+			if (isSuccess)
+			{	// Packet has been received!
 
-			// Convert bytes to RUDP packet information
-			isSuccess = data.Deserialize(reinterpret_cast<uint8_t *>(buffer));
+				// Convert bytes to RUDP packet information
+				isSuccess = data.Deserialize(reinterpret_cast<uint8_t *>(buffer));
 
-			if (!isSuccess)
-			{	// Packet is not an RUDP Packet
-				printf("Received non-RUDP Packet on Listening Port %d: id<%X>\n", mListenSocket->getLocalPort(), data.Id());
+				if (!isSuccess)
+				{	// Packet is not an RUDP Packet
+					printf("Received non-RUDP Packet on Listening Port %d: id<%X>\n", mListenSocket->getLocalPort(), data.Id());
+				}
 			}
 		}
+		else
+		{
+			printf("Ignore listen\n");
+			isSuccess = false;
+		}
+
 
 		// Check if RUDP packet is received
 		if (isSuccess)
@@ -136,6 +147,7 @@ RUDPStream * RUDPServer::Accept()
 			if (index >= mAcknowledgeTable.size())
 			{	// New Client Requesting Connection!
 				printf("New Client found! ip<%s> port<%d>\n", clientAddress.c_str(), clientPort);
+				isClientFound = true;
 
 				printf("Establishing Connection: Received seq <%d> ack<%d>\n", data.Sequence(), data.Ack());
 
@@ -147,8 +159,12 @@ RUDPStream * RUDPServer::Accept()
 				// Create new socket to communicate with client
 				//shared_ptr<UDPSocket> clientSocket(make_shared<UDPSocket>(mAvailablePort));
 				//++mAvailablePort;
-				shared_ptr<UDPSocket> clientSocket(make_shared<UDPSocket>());
-
+#if false
+				shared_ptr<UDPSocket> clientSocket(mListenSocket);
+#else
+				shared_ptr<UDPSocket> clientSocket(make_shared<UDPSocket>(mAvailablePort));
+				++mAvailablePort;
+#endif
 				try
 				{
 					clientSocket->sendTo(acknowledgePacket.data(), static_cast<int>(acknowledgePacket.size()), clientAddress, clientPort);
@@ -228,10 +244,14 @@ RUDPStream * RUDPServer::Accept()
 			}
 
 			// Remove from list
+			index = 0;
 			for (auto& removeIndex : removeIndices)
 			{
-				mAcknowledgeTable.erase(mAcknowledgeTable.begin() + removeIndex);
+				mAcknowledgeTable.erase(mAcknowledgeTable.begin() + removeIndex - index);
+				++index;	// Record offset
 			}
+
+			isClientFound = (mAcknowledgeTable.size() != 0);
 		}
 	}
 }

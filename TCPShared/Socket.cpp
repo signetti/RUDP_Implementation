@@ -219,7 +219,8 @@ void Socket::setLocalPort(unsigned short localPort) //throw(SocketException)
 	localAddr.sin_addr.s_addr = htonl(INADDR_ANY);
 	localAddr.sin_port = htons(localPort);
 
-	if (::bind(sockDesc, (sockaddr *)&localAddr, sizeof(sockaddr_in)) < 0)
+	int result = ::bind(sockDesc, (sockaddr *)&localAddr, sizeof(sockaddr_in));
+	if (result < 0)
 	{
 		throw SocketException("Set of local port failed (bind())", true);
 	}
@@ -467,6 +468,7 @@ int UDPSocket::recvFrom(void *buffer, int bufferLen, string &sourceAddress,	unsi
 	sockaddr_in clntAddr;
 	socklen_t addrLen = sizeof(clntAddr);
 	int bytesReceived;
+	int state;
 	
 	// Use Select to place a delay
 	if (timeOutMS >= 0)
@@ -482,17 +484,14 @@ int UDPSocket::recvFrom(void *buffer, int bufferLen, string &sourceAddress,	unsi
 		FD_SET(sockDesc, &fds);
 
 		// Begin Select (delays for response)
-		int state = select(0, &fds, 0, 0, &timeout);
+		 state = select(0, &fds, 0, 0, &timeout);
 
-		// Select's return value:
-		// -1: error occurred
-		// 0: timed out
-		// > 0: data ready to be read
+		// Select's return state:
 		switch (state)
 		{
-		case 0:		return 0;	// Timed out, do whatever you want to handle this situation
-		case -1:	throw SocketException("Select failed (sendto())", true); break;
-		default:	break;
+		case 0:		return 0;															//   0: Timed out
+		case -1:	throw SocketException("Select failed (sendto())", true); break;		//  -1: Error occurred
+		default:	break;																// > 0: Ready to be read
 		}
 	}
 
@@ -501,7 +500,7 @@ int UDPSocket::recvFrom(void *buffer, int bufferLen, string &sourceAddress,	unsi
 	if (bytesReceived < 0)
 	{
 		int error = WSAGetLastError();
-		if (error != WSAEWOULDBLOCK)
+		if (error != WSAEWOULDBLOCK && error != WSAEMSGSIZE)
 		{
 			std::string message("Send failed (sendto()) with error ");
 			char digits[10];
