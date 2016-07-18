@@ -91,7 +91,7 @@ namespace RUDPUnitTest
 		
 		TEST_METHOD(Shift_Test)
 		{
-			ackbitfield_t Bits(true);
+			ackbitfield_t Bits(ackbitfield_t::AllTrue);
 
 			Assert::IsTrue(Bits.bit31);
 			Assert::IsTrue(Bits.bit00);

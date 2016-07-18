@@ -5,6 +5,7 @@
 #include <fstream>
 #include <string>
 
+#include "Logger.h"
 
 std::vector<std::string> ConfigReader::ReadFile(std::string const & fileName)
 {
@@ -24,7 +25,7 @@ std::vector<std::string> ConfigReader::ReadFile(std::string const & fileName)
 	}
 	else
 	{
-		printf("Config file not found\n");
+		Logger::PrintF("Config file not found\n");
 	}
 	return lines;
 }

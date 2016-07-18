@@ -260,6 +260,7 @@ static char * const DEFAULT_CLIENT_PORT = "27016";
 //static unsigned short const RELIABLE_UDP_ID = 0xABCD;
 
 /*
+#include "Logger.h"
 int GetError(SOCKET sock)
 {
 	int error = 0;
@@ -269,7 +270,7 @@ int GetError(SOCKET sock)
 	if (retval != 0)
 	{
 		// there was a problem getting the error code
-		printf("Error getting socket, error code: %d\n", WSAGetLastError());
+		Logger::PrintF("Error getting socket, error code: %d\n", WSAGetLastError());
 	}
 	return retval;
 }*/

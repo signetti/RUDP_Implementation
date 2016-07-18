@@ -4,9 +4,10 @@
 class WSAManager
 {
 private:
+#ifdef WIN32
 	static const WSAManager _instance;
-
 	WSADATA WinSockAppData;
+#endif
 
 	WSAManager();
 	~WSAManager();

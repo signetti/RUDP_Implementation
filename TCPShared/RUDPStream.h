@@ -5,120 +5,9 @@
 #include <assert.h>
 
 #include "RPacket.h"
-#include "Socket.h"
+#include "UDPSocket.h"
 
-template <typename T, uint32_t QueueSize>
-class CircularQueue
-{
-private:
-	T mQueue[QueueSize];
-	std::uint32_t mEndIndex;
-	std::uint32_t mSize;
-	//std::uint32_t mQueueSize;
-
-public:
-	static const uint32_t MaximumQueueSize = QueueSize;
-
-	CircularQueue() : mEndIndex(0), mSize(0) {}
-
-	// Return the object at the given index, where 0 is the oldest pushed in the queue.
-	T& operator[](uint32_t index)
-	{
-		if (index >= mSize)
-		{
-			throw std::exception("Index Out of Bound");
-		}
-		uint32_t lastIndex = ((QueueSize + (mEndIndex - index - 1)) % QueueSize);
-		assert(lastIndex >= 0 && lastIndex < QueueSize);
-		return mQueue[lastIndex];
-	}
-	const T& operator[](uint32_t index) const { return const_cast<CircularQueue*>(this)->operator[](index); }
-
-	T& Back(const uint32_t& offsetFromEnd = 0U) 
-	{
-		// Check for valid index
-		if (offsetFromEnd >= mSize)
-		{
-			throw std::exception("Index Out of Bound");
-		}
-		// Solve for proper index
-		uint32_t properIndex = (QueueSize + (mEndIndex - mSize) + offsetFromEnd) % QueueSize;
-		// Access proper Index
-		assert(properIndex >= 0 && properIndex < QueueSize);
-		return mQueue[properIndex];
-	}
-	const T& Back(const uint32_t& offsetFromEnd = 0U) const { return const_cast<CircularQueue*>(this)->Back(offsetFromEnd); }
-
-	// Returns true if the size has changed
-	bool Pop()
-	{
-		if (mSize == 0)
-		{
-			return false;
-		}
-		else
-		{
-			--mSize;
-			return true;
-		}
-	}
-
-	T PopBack()
-	{
-		if (mSize == 0)
-		{
-			throw std::exception("Invalid Operation: Pop an empty Queue");
-		}
-
-		// Solve for proper index
-		uint32_t properIndex = (QueueSize + mEndIndex - mSize) % QueueSize;
-		T popped = mQueue[properIndex];
-
-		--mSize;
-
-		return popped;
-	}
-
-	// Returns true if size has changed, false otherwise
-	bool PushBack(const T& item, T* OutPopped = nullptr)
-	{
-		bool result = true;
-		if (mSize >= QueueSize)
-		{	// Queue Overflowed, handle condition. . .
-			if (OutPopped == nullptr)
-			{	// Return Failed
-				return false;
-			}
-			else
-			{	// Return value overwritten in OutPopped
-				uint32_t beginningIndex = (QueueSize + (mEndIndex - mSize)) % QueueSize;
-				*(OutPopped) = std::move(mQueue[beginningIndex]);
-				--mSize;
-
-				// Return false after Pop procedure
-				result = false;
-			}
-		}
-
-		// Perform Push
-		mQueue[mEndIndex] = item;
-
-		++mSize;
-		++mEndIndex;
-		if (mEndIndex >= QueueSize)
-		{
-			mEndIndex -= QueueSize;
-		}
-
-		return result;
-	}
-
-	bool IsEmpty() const { return mSize == 0; }
-	bool IsFull() const { return mSize == QueueSize; }
-	const std::uint32_t Size() const { return mSize; }
-};
-
-
+#include "CircularQueue.h"
 
 
 class RUDPStream
@@ -133,157 +22,26 @@ protected:
 		bool IsAcknowledged;
 		bool IsDataCloned;
 
-		PacketFrame() : SequenceNumber(0), DataPointer(nullptr), SizeOfData(0), IsAcknowledged(false), IsDataCloned(false) {}
-		
-		PacketFrame(const PacketFrame& other) : SequenceNumber(other.SequenceNumber), IsAcknowledged(other.IsAcknowledged)
-			, SizeOfData(other.SizeOfData), IsDataCloned(other.IsDataCloned)
-		{
-			if (IsDataCloned)
-			{
-				// Transfer memory over to DataPointer
-				uint8_t * clone = reinterpret_cast<uint8_t *>(malloc(SizeOfData));
-				memcpy_s(clone, static_cast<size_t>(SizeOfData), other.DataPointer, static_cast<size_t>(SizeOfData));
+		PacketFrame();
+		~PacketFrame();
 
-				DataPointer = clone;
-			}
-			else
-			{
-				DataPointer = other.DataPointer;
-			}
-		}
+		PacketFrame(const PacketFrame& other);
+		PacketFrame(PacketFrame&& other);
 
-		PacketFrame& operator=(const PacketFrame& rhs)
-		{
-			if (this != &rhs)
-			{
-				SequenceNumber = rhs.SequenceNumber;
-				IsAcknowledged = rhs.IsAcknowledged;
-				SizeOfData = rhs.SizeOfData;
-				IsDataCloned = rhs.IsDataCloned;
-
-				if (IsDataCloned)
-				{
-					// Transfer memory over to DataPointer
-					uint8_t * clone = reinterpret_cast<uint8_t *>(malloc(SizeOfData));
-					memcpy_s(clone, static_cast<size_t>(SizeOfData), rhs.DataPointer, static_cast<size_t>(SizeOfData));
-
-					DataPointer = clone;
-				}
-				else
-				{
-					DataPointer = rhs.DataPointer;
-				}
-			}
-			return *this;
-		}
-
-		PacketFrame(PacketFrame&& other) : SequenceNumber(other.SequenceNumber), IsAcknowledged(other.IsAcknowledged)
-			, DataPointer(other.DataPointer), SizeOfData(other.SizeOfData), IsDataCloned(other.IsDataCloned)
-		{
-			other.DataPointer = nullptr;
-			other.SizeOfData = 0;
-			other.IsDataCloned = false;
-		}
-
-		PacketFrame& operator=(PacketFrame&& rhs)
-		{
-			if (this != &rhs)
-			{
-				SequenceNumber = rhs.SequenceNumber;
-				IsAcknowledged = rhs.IsAcknowledged;
-				DataPointer = rhs.DataPointer;
-				SizeOfData = rhs.SizeOfData;
-				IsDataCloned = rhs.IsDataCloned;
-
-				rhs.DataPointer = nullptr;
-				rhs.SizeOfData = 0;
-				rhs.IsDataCloned = false;
-			}
-			return *this;
-		}
-
-		~PacketFrame()
-		{	// Free memory
-			if (IsDataCloned && DataPointer != nullptr)
-			{
-				//free(DataPointer);
-			}
-		}
+		PacketFrame& operator=(const PacketFrame& rhs);
+		PacketFrame& operator=(PacketFrame&& rhs);
 
 		// Assign Packet Frame as Bad
-		void Reassign(uint32_t newSequenceNumber)
-		{
-			Reassign(newSequenceNumber, nullptr, 0, false);
-		}
+		void Reassign(uint32_t newSequenceNumber);
 
 		// Assign Packet Frame, with the data signature
-		void Reassign(uint32_t newSequenceNumber, const uint8_t * newDataPointer, uint32_t newSizeOfData, bool acknowledgement)
-		{
-			// Free memory
-			if (IsDataCloned && DataPointer != nullptr)
-			{
-				free(DataPointer);
-			}
-
-			SequenceNumber = newSequenceNumber;
-			DataPointer = const_cast<uint8_t*>(newDataPointer);
-			SizeOfData = newSizeOfData;
-			IsAcknowledged = acknowledgement;
-			IsDataCloned = false;
-		}
+		void Reassign(uint32_t newSequenceNumber, const uint8_t * newDataPointer, uint32_t newSizeOfData, bool acknowledgement);
 
 		// Assign Packet Frame, with the data signature (that needs to be copied over)
-		void Reassign(uint32_t newSequenceNumber, const std::vector<uint8_t>& newData, bool acknowledgement)
-		{
-			// Free memory
-			if (IsDataCloned && DataPointer != nullptr)
-			{
-				free(DataPointer);
-			}
-
-			// Transfer memory over to DataPointer
-			SizeOfData = static_cast<uint32_t>(newData.size());
-			uint8_t * clone = reinterpret_cast<uint8_t *>(malloc(SizeOfData));
-			memcpy_s(clone, static_cast<size_t>(SizeOfData), newData.data(), static_cast<size_t>(SizeOfData));
-
-			// Initialize Frame
-			SequenceNumber = newSequenceNumber;
-			DataPointer = clone;
-			IsAcknowledged = acknowledgement;
-			IsDataCloned = true;
-		}
+		void Reassign(uint32_t newSequenceNumber, const std::vector<uint8_t>& newData, bool acknowledgement);
 	};
-	/*
-	struct SequenceNumber
-	{
-	private:
-		uint32_t Number;
-	public:
-		
-		// ADDITION
-		SequenceNumber& operator+=(const SequenceNumber& value) { Number += value.Number; }
-		SequenceNumber& operator+=(const uint32_t& value) { Number += value; }
-		friend SequenceNumber operator+(SequenceNumber lhs, const uint32_t& rhs) { lhs += rhs; return lhs; }
-		friend SequenceNumber operator+(const uint32_t& lhs, SequenceNumber rhs) { rhs += lhs; return rhs; }
-		friend SequenceNumber operator+(SequenceNumber lhs, const SequenceNumber& rhs) { lhs += rhs; return lhs; }
-		// SUBTRACTION
-		SequenceNumber& operator-=(const SequenceNumber& value) { Number -= value.Number; }
-		SequenceNumber& operator-=(const uint32_t& value) { Number -= value; }
-		friend SequenceNumber operator-(SequenceNumber lhs, const uint32_t& rhs) { lhs -= rhs; return lhs; }
-		friend SequenceNumber operator-(const uint32_t& lhs, SequenceNumber rhs) { rhs -= lhs; return rhs; }
-		friend SequenceNumber operator-(SequenceNumber lhs, const SequenceNumber& rhs) { lhs -= rhs; return lhs; }
-		// Less-than Comparison
-		friend SequenceNumber operator<(SequenceNumber lhs, const uint32_t& rhs) 
-		{
-			return lhs < rhs; return lhs;
-		}
-		friend SequenceNumber operator<(const uint32_t& lhs, SequenceNumber rhs) { rhs += lhs; return rhs; }
-		friend SequenceNumber operator<(SequenceNumber lhs, const SequenceNumber& rhs) { lhs += rhs; return lhs; }
-	};*/
 
 	typedef CircularQueue<PacketFrame, RPacket::NumberOfAcksPerPacket> SlidingWindow;
-	typedef uint32_t seq_num_t;
-
 
 //protected:
 public:
@@ -298,7 +56,7 @@ public:
 
 
 	//The socket with which the stream is established
-	shared_ptr<UDPSocket> mSocket;
+	std::shared_ptr<UDPSocket> mSocket;
 	// Address information where to send the packets
 	std::string mToAddress;
 	unsigned short mToPort;
@@ -313,7 +71,7 @@ public:
 	seq_num_t mRemoteSequenceNumber;
 
 	// The last message id assigned (synced between the two sides)
-	seq_num_t mMessageId;
+	uint32_t mMessageId;
 
 	// Last time captured since receiving any data from the remote client
 	std::chrono::high_resolution_clock::time_point mLastConnectionTime;
@@ -378,10 +136,10 @@ public:
 
 	/*============================= Send / Receive Helpers ===================================*/
 	bool IsConnectionTimeOut(std::chrono::high_resolution_clock::time_point startTime, int32_t maxTimeOutMS, uint64_t* OutDuration = nullptr);
-	bool ReceiveRPacket(uint32_t& OutBytesReceived, RPacket& OutPacket, int32_t maxTimeOutMS = 10000U);
-	bool ReceiveRPacket(RPacket& OutPacket, int32_t maxTimeOutMS = 10000U);
-	bool SendRPacket(uint32_t& OutBytesSent, const RPacket& packet);
-	bool SendRPacket(const RPacket& packet);
+	bool ReceiveValidPacket(uint32_t& OutBytesReceived, RPacket& OutPacket, int32_t maxTimeOutMS = 10000U);
+	bool ReceiveValidPacket(RPacket& OutPacket, int32_t maxTimeOutMS = 10000U);
+	bool SendPacket(uint32_t& OutBytesSent, const RPacket& packet);
+	bool SendPacket(const RPacket& packet);
 public:
 
 	/*============================= RUDP Stream ===================================*/
@@ -389,7 +147,7 @@ public:
 	*	RUDPStream Constructor
 	*	@param	socket		The socket with which the stream is established
 	*/
-	explicit RUDPStream(const shared_ptr<UDPSocket>& socket, std::string toAddress, unsigned short toPort,
+	explicit RUDPStream(const std::shared_ptr<UDPSocket>& socket, std::string toAddress, unsigned short toPort,
 		const uint32_t& senderSequenceNumber, const uint32_t& receiverSequenceNumber, uint32_t maxConnectionTimeOut = 2000);
 
 	static RUDPStream RUDPStream::InvalidStream();

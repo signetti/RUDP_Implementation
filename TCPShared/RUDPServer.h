@@ -4,10 +4,11 @@
 #include <string>
 #include <chrono>
 
-#include "Socket.h"
 #include <memory>
 
 class RUDPStream;
+class UDPSocket;
+class SocketException;
 
 class RUDPServer
 {
@@ -18,10 +19,10 @@ private:
 		unsigned short port;
 		uint32_t seqNumSent;
 		uint32_t ackNumRecvd;
-		shared_ptr<UDPSocket> socket;
+		std::shared_ptr<UDPSocket> socket;
 		std::chrono::high_resolution_clock::time_point time_stamp;
 
-		PendingClientsT(shared_ptr<UDPSocket> sock, const std::string& address,	unsigned short port, uint32_t sequence
+		PendingClientsT(std::shared_ptr<UDPSocket> sock, const std::string& address,	unsigned short port, uint32_t sequence
 			, uint32_t acknowledgement, std::chrono::high_resolution_clock::time_point time)
 			: socket(sock), address(address), port(port), seqNumSent(sequence), ackNumRecvd(acknowledgement), time_stamp(time) {}
 	};
@@ -31,7 +32,7 @@ private:
 	uint16_t mAvailablePort;
 
 	// The listening socket
-	shared_ptr<UDPSocket> mListenSocket;
+	std::shared_ptr<UDPSocket> mListenSocket;
 	// Address information on the listening socket
 	//struct addrinfo * mInfo;
 	// List of clients that this server has accepted
@@ -58,25 +59,6 @@ public:
 	*	@return returns true if listening socket is created successfully, false otherwise.
 	*/
 	bool Open();
-
-	/**
-	*	Creates the socket that will be listening on the server.
-	*	@return returns true if socket is created successfully, false otherwise.
-	*/
-	bool CreateSocket();
-
-	/**
-	*	Binds the socket created to the port number passed in on construction.
-	*	@return returns true if socket binded successfully, false otherwise.
-	*/
-	bool Bind();
-
-
-	/**
-	*	Creates the socket that will be listening on the server
-	*	@return returns true if successful, false otherwise.
-	*/
-	bool Listen();
 
 
 	/**

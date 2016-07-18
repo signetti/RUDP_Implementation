@@ -21,6 +21,9 @@
       <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
       <Extensions>h;hh;hpp;hxx;hm;inl;inc;xsd</Extensions>
     </Filter>
+    <Filter Include="RUDP\Helper">
+      <UniqueIdentifier>{b0856cf8-b702-4fa6-803c-47d589c4ff8b}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <Text Include="ReadMe.txt" />
@@ -36,9 +39,6 @@
       <Filter>Socket</Filter>
     </ClInclude>
     <ClInclude Include="WSAManager.h">
-      <Filter>Socket</Filter>
-    </ClInclude>
-    <ClInclude Include="SocketUtils.h">
       <Filter>Socket</Filter>
     </ClInclude>
     <ClInclude Include="TCPStream.h">
@@ -65,18 +65,42 @@
     <ClInclude Include="RUDPStream.h">
       <Filter>RUDP</Filter>
     </ClInclude>
-    <ClInclude Include="RPacket.h">
-      <Filter>RUDP</Filter>
-    </ClInclude>
     <ClInclude Include="StopWatch.h">
       <Filter>Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="SocketException.h">
+      <Filter>Socket</Filter>
+    </ClInclude>
+    <ClInclude Include="UDPSocket.h">
+      <Filter>Socket</Filter>
+    </ClInclude>
+    <ClInclude Include="SocketGlobal.h">
+      <Filter>Socket</Filter>
+    </ClInclude>
+    <ClInclude Include="RUDPSocket.h">
+      <Filter>Socket</Filter>
+    </ClInclude>
+    <ClInclude Include="TCPSocket.h">
+      <Filter>Socket</Filter>
+    </ClInclude>
+    <ClInclude Include="CommunicatingSocket.h">
+      <Filter>Socket</Filter>
+    </ClInclude>
+    <ClInclude Include="Logger.h">
+      <Filter>Preprocessor</Filter>
+    </ClInclude>
+    <ClInclude Include="ImmediateFunctionCall.h">
+      <Filter>Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="RPacket.h">
+      <Filter>RUDP\Helper</Filter>
+    </ClInclude>
+    <ClInclude Include="CircularQueue.h">
+      <Filter>Preprocessor</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Socket.cpp">
-      <Filter>Socket</Filter>
-    </ClCompile>
-    <ClCompile Include="SocketUtils.cpp">
       <Filter>Socket</Filter>
     </ClCompile>
     <ClCompile Include="WSAManager.cpp">
@@ -100,9 +124,6 @@
     <ClCompile Include="TCPServer.cpp">
       <Filter>TCP</Filter>
     </ClCompile>
-    <ClCompile Include="RPacket.cpp">
-      <Filter>RUDP</Filter>
-    </ClCompile>
     <ClCompile Include="ConfigReader.cpp">
       <Filter>Utils</Filter>
     </ClCompile>
@@ -112,5 +133,25 @@
     <ClCompile Include="stdafx.cpp">
       <Filter>Preprocessor</Filter>
     </ClCompile>
+    <ClCompile Include="SocketException.cpp">
+      <Filter>Socket</Filter>
+    </ClCompile>
+    <ClCompile Include="UDPSocket.cpp">
+      <Filter>Socket</Filter>
+    </ClCompile>
+    <ClCompile Include="RUDPSocket.cpp">
+      <Filter>Socket</Filter>
+    </ClCompile>
+    <ClCompile Include="CommunicatingSocket.cpp">
+      <Filter>Socket</Filter>
+    </ClCompile>
+    <ClCompile Include="TCPSocket.cpp">
+      <Filter>Socket</Filter>
+    </ClCompile>
+    <ClCompile Include="Logger.cpp" />
+    <ClCompile Include="RPacket.cpp">
+      <Filter>RUDP\Helper</Filter>
+    </ClCompile>
+    <ClCompile Include="CircularQueue.cpp" />
   </ItemGroup>
 </Project>

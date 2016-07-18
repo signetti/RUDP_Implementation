@@ -4,10 +4,15 @@
 #include "RPacket.h"
 #include "StopWatch.h"
 
+#include "UDPSocket.h"
+#include "SocketException.h"
+
+#include "Logger.h"
+
 #include <sstream>
 
 RUDPServer::RUDPServer(std::uint16_t listenPort, std::uint32_t maxConnectionTimeOut)
-	: mListenSocket(make_shared<UDPSocket>(listenPort)), mAvailablePort(listenPort + 1), mMaxConnectionTimeOut(maxConnectionTimeOut), mAcknowledgeTable()
+	: mListenSocket(std::make_shared<UDPSocket>(listenPort)), mAvailablePort(listenPort + 1), mMaxConnectionTimeOut(maxConnectionTimeOut), mAcknowledgeTable()
 {
 	// Start-Up the WSA Library
 	WSAManager::StartUp();
@@ -35,7 +40,7 @@ RUDPStream * RUDPServer::Accept()
 {
 	static int32_t ADDR_LEN = sizeof(struct sockaddr_in);
 
-	int bytesReceived;
+	uint32_t bytesReceived;
 	char buffer[512];
 	uint32_t seqNum;
 	uint32_t ackNum;
@@ -65,7 +70,7 @@ RUDPStream * RUDPServer::Accept()
 	++mAvailablePort;
 	for (MAX_PORT_CHECK = mAvailablePort + 9, isSuccess = false; !isSuccess && mAvailablePort <= MAX_PORT_CHECK; ++mAvailablePort)
 	{
-		printf("Testing port %d ... ", mAvailablePort);
+		Logger::PrintF("Testing port %d ... ", mAvailablePort);
 		try
 		{
 			clientSocket = make_shared<UDPSocket>(mAvailablePort);
@@ -77,12 +82,12 @@ RUDPStream * RUDPServer::Accept()
 
 	if (mAvailablePort > MAX_PORT_CHECK)
 	{
-		printf("failed to open new port for incoming client\n");
+		Logger::PrintF("failed to open new port for incoming client\n");
 		return nullptr;
 	}
 	else
 	{
-		printf("Port Available: %d\n", mAvailablePort);
+		Logger::PrintF("Port Available: %d\n", mAvailablePort);
 	}
 
 	*/
@@ -102,10 +107,10 @@ RUDPStream * RUDPServer::Accept()
 		if (!isClientFound)
 		{
 			// Get Incoming Packets
-			bytesReceived = mListenSocket->recvFrom(buffer, 512, clientAddress, clientPort, mMaxConnectionTimeOut);
+			bytesReceived = 512;
+			isSuccess = mListenSocket->ReceiveFrom(buffer, bytesReceived, clientAddress, clientPort, mMaxConnectionTimeOut);
 
 			// Check if packet is received
-			isSuccess = (bytesReceived > 0);
 			if (isSuccess)
 			{	// Packet has been received!
 
@@ -114,13 +119,13 @@ RUDPStream * RUDPServer::Accept()
 
 				if (!isSuccess)
 				{	// Packet is not an RUDP Packet
-					printf("Received non-RUDP Packet on Listening Port %d: id<%X>\n", mListenSocket->getLocalPort(), data.Id());
+					Logger::PrintF("Received non-RUDP Packet on Listening Port %d: id<%X>\n", mListenSocket->GetLocalPort(), data.Id());
 				}
 			}
 		}
 		else
 		{
-			printf("Ignore listen\n");
+			Logger::PrintF("Ignore listen\n");
 			isSuccess = false;
 		}
 
@@ -146,10 +151,10 @@ RUDPStream * RUDPServer::Accept()
 			// Check if Client has been Acknowledged before (ignore message if that's the case)
 			if (index >= mAcknowledgeTable.size())
 			{	// New Client Requesting Connection!
-				printf("New Client found! ip<%s> port<%d>\n", clientAddress.c_str(), clientPort);
+				Logger::PrintF("New Client found! ip<%s> port<%d>\n", clientAddress.c_str(), clientPort);
 				isClientFound = true;
 
-				printf("Establishing Connection: Received seq <%d> ack<%d>\n", data.Sequence(), data.Ack());
+				Logger::PrintF("Establishing Connection: Received seq <%d> ack<%d>\n", data.Sequence(), data.Ack());
 
 				// Create RPacket to send...
 				seqNum = rand();
@@ -157,25 +162,20 @@ RUDPStream * RUDPServer::Accept()
 				std::vector<uint8_t> acknowledgePacket = RPacket::SerializeInstance(seqNum, ackNum, 0, 0, 0, std::vector<uint8_t>());
 
 				// Create new socket to communicate with client
-				//shared_ptr<UDPSocket> clientSocket(make_shared<UDPSocket>(mAvailablePort));
-				//++mAvailablePort;
-#if false
-				shared_ptr<UDPSocket> clientSocket(mListenSocket);
-#else
-				shared_ptr<UDPSocket> clientSocket(make_shared<UDPSocket>(mAvailablePort));
+				std::shared_ptr<UDPSocket> clientSocket(std::make_shared<UDPSocket>(mAvailablePort));
 				++mAvailablePort;
-#endif
+
 				try
 				{
-					clientSocket->sendTo(acknowledgePacket.data(), static_cast<int>(acknowledgePacket.size()), clientAddress, clientPort);
+					clientSocket->SendTo(acknowledgePacket.data(), static_cast<int>(acknowledgePacket.size()), clientAddress, clientPort);
 				}
 				catch (SocketException ex)
 				{
-					printf("sendto failed with error: %s\n", ex.what());
+					Logger::PrintF("sendto failed with error: %s\n", ex.what());
 				}
 
 				// Store acknowledgement information in table
-				printf("Establishing Connection: Sending  seq <%d> ack<%d>\n", seqNum, ackNum);
+				Logger::PrintF("Establishing Connection: Sending  seq <%d> ack<%d>\n", seqNum, ackNum);
 				mAcknowledgeTable.emplace_back(PendingClientsT(clientSocket, clientAddress, clientPort, seqNum, ackNum, std::chrono::high_resolution_clock::now()));
 			}
 		}
@@ -190,7 +190,8 @@ RUDPStream * RUDPServer::Accept()
 			int index = 0;
 			for (auto& client : mAcknowledgeTable)
 			{
-				bytesReceived = client.socket->recvFrom(buffer, 512, clientAddress, clientPort, mMaxConnectionTimeOut);
+				bytesReceived = 512;
+				isSuccess = client.socket->ReceiveFrom(buffer, bytesReceived, clientAddress, clientPort, mMaxConnectionTimeOut);
 
 				// Check if packet is received
 				isSuccess = (bytesReceived > 0);
@@ -202,7 +203,7 @@ RUDPStream * RUDPServer::Accept()
 
 					if (!isSuccess)
 					{	// Packet is not an RUDP Packet
-						printf("Received non-RUDP Packet on Port %d: id<%X>\n", client.socket->getLocalPort(), data.Id());
+						Logger::PrintF("Received non-RUDP Packet on Port %d: id<%X>\n", client.socket->GetLocalPort(), data.Id());
 					}
 				}
 
@@ -212,7 +213,7 @@ RUDPStream * RUDPServer::Accept()
 					// Check if Acknowledgement is correct
 					if (data.Ack() == client.seqNumSent + 1U)
 					{	// Successful Acknowledgement from Client!
-						printf("Acknowledged Connection: Received seq <%d> ack<%d>\n", data.Sequence(), data.Ack());
+						Logger::PrintF("Acknowledged Connection: Received seq <%d> ack<%d>\n", data.Sequence(), data.Ack());
 
 						// Create RUDP Stream
 						RUDPStream * newClientStream = new RUDPStream(client.socket, client.address, client.port, client.seqNumSent + 1, client.ackNumRecvd + 1, mMaxConnectionTimeOut);
@@ -221,7 +222,7 @@ RUDPStream * RUDPServer::Accept()
 						removeIndices.push_back(index);
 
 						// Connection Established
-						printf("Connection Established!\n");
+						Logger::PrintF("Connection Established!\n");
 
 						// Add to the list of Clients
 						mClients.push_back(newClientStream);
@@ -231,12 +232,12 @@ RUDPStream * RUDPServer::Accept()
 					}
 					else
 					{	// Client has a bad acknowledgent number
-						printf("Received Bad Acknowledgement Number: seq<%d> ack<%d>\n", data.Sequence(), data.Ack());
+						Logger::PrintF("Received Bad Acknowledgement Number: seq<%d> ack<%d>\n", data.Sequence(), data.Ack());
 					}
 				}
 				else
 				{	// Connection timed-out for this acknowledgement
-					printf("Connection Timed-Out for Client %s:%d\n", client.address.c_str(), client.port);
+					Logger::PrintF("Connection Timed-Out for Client %s:%d\n", client.address.c_str(), client.port);
 
 					// Remove from Acknowledged Clients Table
 					removeIndices.push_back(index);

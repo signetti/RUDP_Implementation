@@ -6,11 +6,96 @@
 
 struct Packet;
 
+
+
+typedef uint32_t seq_num_t;
+
+struct SequenceNumber
+{
+private:
+	constexpr static const seq_num_t sMaximumSequenceNumberValue = seq_num_t(~(0U));
+
+	uint32_t Number;
+public:
+	// Constructor
+	SequenceNumber(uint32_t number) : Number(number) {}
+
+	// ADDITION
+	SequenceNumber& operator+=(const int32_t& value) { Number += value; return (*this); }
+	friend SequenceNumber operator+(const SequenceNumber& lhs, int32_t rhs)		{ return lhs.Number + rhs; }
+	friend SequenceNumber operator+(int32_t lhs, const SequenceNumber& rhs)		{ return lhs + rhs.Number; }
+
+	// SUBTRACTION
+	SequenceNumber& operator-=(const int32_t& value) { Number -= value; }
+	friend SequenceNumber operator-(SequenceNumber lhs, const int32_t& rhs)		{ return lhs.Number - rhs; }
+	friend SequenceNumber operator-(const int32_t& lhs, SequenceNumber rhs)		{ return lhs - rhs.Number; }
+
+	// SUBTRACTION (Using Wrap-Around)
+	friend int32_t operator-(const SequenceNumber& lhs, const SequenceNumber& rhs)
+	{
+		const uint32_t& seq1 = lhs.Number;
+		const uint32_t& seq2 = rhs.Number;
+		uint32_t diff;
+
+		if (seq1 > seq2)
+		{	// Difference will result in negative value
+			diff = seq1 - seq2;
+			if (diff > (sMaximumSequenceNumberValue / 2))
+			{	// Negative value is actually Positive (due to wrap around)
+				return static_cast<int32_t>((sMaximumSequenceNumberValue / 2) - diff);
+			}
+			else
+			{	// Return negative difference
+				return 0 - static_cast<int32_t>(diff);
+			}
+		}
+		else
+		{	// Difference will result in positive value
+			diff = seq2 - seq1;
+			if (diff > (sMaximumSequenceNumberValue / 2))
+			{	// Positive value is actually Negative (due to wrap around)
+				return 0 - static_cast<int32_t>((sMaximumSequenceNumberValue / 2) - diff);
+			}
+			else
+			{	// Return positive difference
+				return static_cast<int32_t>(diff);
+			}
+		}
+		/* OLD WAY OF COMPUTING... QUITE ERROR-PRONE...
+		int32_t diff = static_cast<int32_t>(seq2) - static_cast<int32_t>(seq1);
+		if ((diff >= 0) && (diff > MaximumSequenceNumberValue / 2))
+		{	// Numbers DO wrap around, compute difference
+			//return diff - (MaximumSequenceNumberValue / 2);
+			printf("WRAP AROUND COMPUTED: seq1<%d> seq2<%d> diff<%d>", seq1, seq2, (MaximumSequenceNumberValue - seq2) + seq1);
+			return (MaximumSequenceNumberValue - seq2) + seq1;
+			// Theoretically M - S2 + S1 == M + (S1 - S2) == M - diff, check on this. . .
+		}
+		else if((diff <= 0) && ((-diff) <= MaximumSequenceNumberValue / 2))
+		{	// Numbers DO wrap around, compute difference
+			//return (MaximumSequenceNumberValue / 2) - diff;
+			printf("WRAP AROUND COMPUTED: seq1<%d> seq2<%d> diff<%d>", seq1, seq2, (MaximumSequenceNumberValue - seq1) + seq2);
+			return (MaximumSequenceNumberValue - seq1) + seq2;
+			// Theoretically M - S1 + S2 == M + (S2 - S1) == M + diff, check on this. . .
+		}
+		else
+		{	// Numbers do not wrap around
+			return diff;
+		}*/
+	}
+
+	// Comparisons (Considering Wrap-Around)
+	bool operator<(const SequenceNumber& rhs)	{ return ((*this) - rhs) < 0;  }
+	bool operator<=(const SequenceNumber& rhs)	{ return ((*this) - rhs) <= 0; }
+	bool operator>(const SequenceNumber& rhs)	{ return ((*this) - rhs) > 0;  }
+	bool operator>=(const SequenceNumber& rhs)	{ return ((*this) - rhs) >= 0; }
+	bool operator==(const SequenceNumber& rhs)	{ return ((*this) - rhs) == 0; }
+	bool operator!=(const SequenceNumber& rhs)	{ return ((*this) - rhs) != 0; }
+};
+
 // An easy way to access the ack_bitfield
 union ackbitfield_t
 {
 	uint32_t bitfield;
-
 	struct
 	{
 		bool bit00 : 1;
@@ -47,11 +132,12 @@ union ackbitfield_t
 		bool bit31 : 1;
 	};
 
-	ackbitfield_t() : bitfield(0U) {}
-	ackbitfield_t(bool defaultValues) : bitfield((defaultValues) ? ~(0U) : 0U) {}
-	ackbitfield_t(uint32_t bits) : bitfield(bits) {}
+	constexpr static const uint32_t AllTrue	= 0b11111111111111111111111111111111;
+	constexpr static const uint32_t AllFalse	= 0b00000000000000000000000000000000;
 
-	bool IsAll(bool value) const { return bitfield == ((value) ? ~(0U) : 0U); }
+	ackbitfield_t(int32_t bits = AllFalse) : bitfield(bits) {}
+
+	bool IsAll(bool value) const { return bitfield == ((value) ? AllTrue : AllFalse); }
 
 	bool operator[](uint32_t bit_number) const
 	{
@@ -146,15 +232,16 @@ union ackbitfield_t
 };
 static_assert(sizeof(ackbitfield_t) == 4, "The ackbitfield_t union is not 4 bytes");
 
+
 class RPacket
 {
 private:
 	// The Identification number that has been serialized, otherwise it will be set to the id set for RUDP
 	std::uint32_t mId;
 	// The sequence number of this packet, used to assert order in the data
-	std::uint32_t mSeq;
+	seq_num_t mSeq;
 	// The acknowledgement number, used to alert the recipient of the last packet received
-	std::uint32_t mAck;
+	seq_num_t mAck;
 	// The acknowledgement bit-field, used to hint to the recipient of the previous 32 packets acknowledged
 	ackbitfield_t mAckBitfield;
 	// The message identification number, which will now be passed to start at zero
@@ -170,15 +257,18 @@ private:
 	static std::vector<uint8_t> CopyBytes(const uint8_t * buffer, std::uint32_t size);
 
 	// Private version of the public SerializeInstance(), with the difference of assigning an ID other than the RUDP-ID to be serialized
-	static std::vector<uint8_t> SerializeInstance(std::uint32_t id, std::uint32_t seq, std::uint32_t ack
-		, std::uint32_t ack_bitfield, std::uint32_t msg_id, std::uint32_t frag_count, std::vector<uint8_t> buffer);
+	static std::vector<uint8_t> SerializeInstance(std::uint32_t id, seq_num_t seq, seq_num_t ack
+		, ackbitfield_t ack_bitfield, std::uint32_t msg_id, std::uint32_t frag_count, std::vector<uint8_t> buffer);
 
 	// Private constructor to convert Flatbuffer's Packet protocol into an RPacket instance
 	RPacket(const Packet * packet);
+
+
+
 public:
 	// The RUDP's Official Identification number, used to determine if the packet is indeed an RUDP Packet
 	static const std::uint32_t RUDP_ID = 0xABCD;
-	static const std::uint32_t NumberOfAcksPerPacket = 33U;
+	constexpr static const std::uint32_t NumberOfAcksPerPacket = 33U;
 	
 	/*	RPacket default constructor, intended to immediately Deserialize() data or Initialize() after instantiation.
 	 *	@note	The id for this instance will be an invalid id (not RUDP ID) if not deserialized or initialized before use
@@ -190,14 +280,14 @@ public:
 	 *	@param	ack_bitfield	Acknowledgement bitfield
 	 *	@param	buffer			The data this packet will hold
 	 */
-	RPacket(std::uint32_t seq, std::uint32_t ack, ackbitfield_t ack_bitfield, std::uint32_t msg_id, std::uint32_t frag_count, std::vector<uint8_t> buffer);
+	RPacket(seq_num_t seq, seq_num_t ack, ackbitfield_t ack_bitfield, std::uint32_t msg_id, std::uint32_t frag_count, std::vector<uint8_t> buffer);
 	/*	RPacket constructor
 	*	@param	seq				Sequence number
 	*	@param	ack				Acknowledgement number
 	*	@param	ack_bitfield	Acknowledgement bitfield
 	*	@param	message			The message this packet will hold
 	*/
-	RPacket(std::uint32_t seq, std::uint32_t ack, ackbitfield_t ack_bitfield, std::uint32_t msg_id, std::uint32_t frag_count, std::string message);
+	RPacket(seq_num_t seq, seq_num_t ack, ackbitfield_t ack_bitfield, std::uint32_t msg_id, std::uint32_t frag_count, std::string message);
 	/*	RPacket constructor
 	*	@param	seq				Sequence number
 	*	@param	ack				Acknowledgement number
@@ -205,7 +295,7 @@ public:
 	*	@param	data			The data this packet will hold
 	*	@param	sizeOfData		The amount of bytes in the data
 	*/
-	RPacket(std::uint32_t seq, std::uint32_t ack, ackbitfield_t ack_bitfield, std::uint32_t msg_id, std::uint32_t frag_count, const uint8_t * data, std::int32_t sizeOfData);
+	RPacket(seq_num_t seq, seq_num_t ack, ackbitfield_t ack_bitfield, std::uint32_t msg_id, std::uint32_t frag_count, const uint8_t * data, std::int32_t sizeOfData);
 	/*	RPacket destructor
 	 */
 	~RPacket();
@@ -216,14 +306,14 @@ public:
 	*	@param	ack_bitfield	Acknowledgement bitfield
 	*	@param	buffer			The data this packet will hold
 	*/
-	void Initialize(std::uint32_t seq, std::uint32_t ack, ackbitfield_t ack_bitfield, std::uint32_t msg_id, std::uint32_t frag_count, std::vector<uint8_t> buffer);
+	void Initialize(seq_num_t seq, seq_num_t ack, ackbitfield_t ack_bitfield, std::uint32_t msg_id, std::uint32_t frag_count, std::vector<uint8_t> buffer);
 	/*	Initialize over the RPacket (equivalent to its constructor-counterpart)
 	*	@param	seq				Sequence number
 	*	@param	ack				Acknowledgement number
 	*	@param	ack_bitfield	Acknowledgement bitfield
 	*	@param	message			The message this packet will hold
 	*/
-	void Initialize(std::uint32_t seq, std::uint32_t ack, ackbitfield_t ack_bitfield, std::uint32_t msg_id, std::uint32_t frag_count, std::string message);
+	void Initialize(seq_num_t seq, seq_num_t ack, ackbitfield_t ack_bitfield, std::uint32_t msg_id, std::uint32_t frag_count, std::string message);
 	/*	Initialize over the RPacket (equivalent to its constructor-counterpart)
 	*	@param	seq				Sequence number
 	*	@param	ack				Acknowledgement number
@@ -231,7 +321,7 @@ public:
 	*	@param	data			The data this packet will hold
 	*	@param	sizeOfData		The amount of bytes in the data
 	*/
-	void Initialize(std::uint32_t seq, std::uint32_t ack, ackbitfield_t ack_bitfield, std::uint32_t msg_id, std::uint32_t frag_count, const uint8_t * data, std::int32_t sizeOfData);
+	void Initialize(seq_num_t seq, seq_num_t ack, ackbitfield_t ack_bitfield, std::uint32_t msg_id, std::uint32_t frag_count, const uint8_t * data, std::int32_t sizeOfData);
 
 	/*	Checks to see if what is deserialized is an RUDP Packet
 	*	@return	returns true if the packet is bad (id does not match RUDP ID), false otherwise
@@ -240,12 +330,13 @@ public:
 
 	// Getters (Direct manipulation is not allowed)
 	std::uint32_t Id() const;
-	std::uint32_t Sequence() const;
-	std::uint32_t Ack() const;
+	seq_num_t Sequence() const;
+	seq_num_t Ack() const;
 	ackbitfield_t AckBitfield() const;
 	std::uint32_t MessageId() const;
 	std::uint32_t FragmentCount() const;
 	const std::vector<uint8_t>& Buffer() const;
+	std::uint32_t BufferSize() const;
 	std::string Message() const;
 
 	//	Make this packet a Bad Packet (for testing purposes only)
@@ -279,7 +370,7 @@ public:
 	 *	@param	buffer			The data this packet will hold
 	 *	@return	returns the byte-array representation of the RUDP Packet
 	 */
-	static std::vector<uint8_t> SerializeInstance(std::uint32_t seq, std::uint32_t ack, std::uint32_t ack_bitfield, std::uint32_t msg_id, std::uint32_t frag_count, std::vector<uint8_t> buffer);
+	static std::vector<uint8_t> SerializeInstance(seq_num_t seq, seq_num_t ack, ackbitfield_t ack_bitfield, std::uint32_t msg_id, std::uint32_t frag_count, std::vector<uint8_t> buffer);
 
 	/*	Serialize the data directly into the RUDP Packet's byte-array representation, without creating an instance.
 	*	@note	Equivalent to <pre><code>RPacket(...).Serialize();</code></pre>
@@ -290,7 +381,7 @@ public:
 	*	@param	bufferSize		The amount of bytes in the data
 	*	@return	returns the byte-array representation of the RUDP Packet
 	*/
-	static std::vector<uint8_t> SerializeInstance(std::uint32_t seq, std::uint32_t ack, std::uint32_t ack_bitfield, std::uint32_t msg_id, std::uint32_t frag_count, const uint8_t * buffer, uint32_t bufferSize);
+	static std::vector<uint8_t> SerializeInstance(seq_num_t seq, seq_num_t ack, ackbitfield_t ack_bitfield, std::uint32_t msg_id, std::uint32_t frag_count, const uint8_t * buffer, uint32_t bufferSize);
 
 	/*	Deserialize the byte-array into a new instance.
 	 *	@note	Equivalent to <pre><code>new RPacket().Deserialize(...);</code></pre>

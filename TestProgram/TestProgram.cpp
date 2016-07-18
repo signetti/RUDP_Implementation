@@ -17,7 +17,8 @@
 *   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 #include "stdafx.h"
-#include "Socket.h" // For UDPSocket and SocketException
+#include "UDPSocket.h"
+#include "SocketException.h"
 #include <iostream>          // For cout and cerr
 #include <cstdlib>           // For atoi()
 
@@ -27,7 +28,7 @@ int server_main(int argc, char *argv[])
 {
 	if (argc != 2)
 	{                  // Test for correct number of parameters
-		cerr << "Usage: " << argv[0] << " <Server Port>" << endl;
+		std::cerr << "Usage: " << argv[0] << " <Server Port>" << std::endl;
 		exit(1);
 	}
 
@@ -38,23 +39,25 @@ int server_main(int argc, char *argv[])
 		UDPSocket sock(echoServPort);
 
 		char echoBuffer[ECHOMAX];         // Buffer for echo string
-		int recvMsgSize;                  // Size of received message
-		string sourceAddress;             // Address of datagram source
+		uint32_t recvMsgSize;                  // Size of received message
+		std::string sourceAddress;             // Address of datagram source
 		unsigned short sourcePort;        // Port of datagram source
 		for (;;)
 		{  // Run forever
 		   // Block until receive message from a client
-			recvMsgSize = sock.recvFrom(echoBuffer, ECHOMAX, sourceAddress,	sourcePort);
+			recvMsgSize = ECHOMAX;
 
-			cout << "Received packet from " << sourceAddress << ":"
-				<< sourcePort << endl;
+			sock.ReceiveFrom(echoBuffer, recvMsgSize, sourceAddress,	sourcePort);
 
-			sock.sendTo(echoBuffer, recvMsgSize, sourceAddress, sourcePort);
+			std::cout << "Received packet from " << sourceAddress << ":"
+				<< sourcePort << std::endl;
+
+			sock.SendTo(echoBuffer, recvMsgSize, sourceAddress, sourcePort);
 		}
 	}
 	catch (SocketException &e)
 	{
-		cerr << e.what() << endl;
+		std::cerr << e.what() << std::endl;
 		exit(1);
 	}
 	// NOT REACHED
@@ -85,20 +88,20 @@ int client_main(int argc, char *argv[])
 {
 	if ((argc < 3) || (argc > 4))
 	{   // Test for correct number of arguments
-		cerr << "Usage: " << argv[0]
+		std::cerr << "Usage: " << argv[0]
 			<< " <Server> <Echo String> [<Server Port>]\n";
 		exit(1);
 	}
 
-	string servAddress = argv[1];             // First arg: server address
+	std::string servAddress = argv[1];             // First arg: server address
 	char* echoString = argv[2];               // Second arg: string to echo
 	int echoStringLen = strlen(echoString);   // Length of string to echo
 	if (echoStringLen > ECHOMAX)
 	{    // Check input length
-		cerr << "Echo string too long" << endl;
+		std::cerr << "Echo string too long" << std::endl;
 		exit(1);
 	}
-	unsigned short echoServPort = Socket::resolveService(
+	unsigned short echoServPort = Socket::ResolveService(
 		(argc == 4) ? argv[3] : "echo", "udp");
 
 	try
@@ -106,26 +109,26 @@ int client_main(int argc, char *argv[])
 		UDPSocket sock;
 
 		// Send the string to the server
-		sock.sendTo(echoString, echoStringLen, servAddress, echoServPort);
+		sock.SendTo(echoString, echoStringLen, servAddress, echoServPort);
 
 		// Receive a response
 		char echoBuffer[ECHOMAX + 1];       // Buffer for echoed string + \0
 		int respStringLen;                  // Length of received response
-		if ((respStringLen = sock.recv(echoBuffer, ECHOMAX)) != echoStringLen)
+		if ((respStringLen = sock.Receive(echoBuffer, ECHOMAX)) != echoStringLen)
 		{
-			cerr << "Unable to receive" << endl;
+			std::cerr << "Unable to receive" << std::endl;
 			exit(1);
 		}
 
 		echoBuffer[respStringLen] = '\0';             // Terminate the string!
-		cout << "Received: " << echoBuffer << endl;   // Print the echoed arg
+		std::cout << "Received: " << echoBuffer << std::endl;   // Print the echoed arg
 
 													  // Destructor closes the socket
 
 	}
 	catch (SocketException &e)
 	{
-		cerr << e.what() << endl;
+		std::cerr << e.what() << std::endl;
 		exit(1);
 	}
 

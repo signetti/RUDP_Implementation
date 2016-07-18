@@ -161,30 +161,42 @@
     <Text Include="ReadMe.txt" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="CircularQueue.h" />
+    <ClInclude Include="CommunicatingSocket.h" />
     <ClInclude Include="ConfigReader.h" />
+    <ClInclude Include="ImmediateFunctionCall.h" />
+    <ClInclude Include="Logger.h" />
+    <ClInclude Include="RUDPSocket.h" />
+    <ClInclude Include="SocketGlobal.h" />
     <ClInclude Include="RPacket.h" />
     <ClInclude Include="RUDPClient.h" />
     <ClInclude Include="RUDPServer.h" />
     <ClInclude Include="RUDPStream.h" />
     <ClInclude Include="SharedTestData.h" />
     <ClInclude Include="Socket.h" />
-    <ClInclude Include="SocketUtils.h" />
+    <ClInclude Include="SocketException.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="StopWatch.h" />
     <ClInclude Include="targetver.h" />
     <ClInclude Include="TCPClient.h" />
     <ClInclude Include="TCPServer.h" />
+    <ClInclude Include="TCPSocket.h" />
     <ClInclude Include="TCPStream.h" />
+    <ClInclude Include="UDPSocket.h" />
     <ClInclude Include="WSAManager.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="CircularQueue.cpp" />
+    <ClCompile Include="CommunicatingSocket.cpp" />
     <ClCompile Include="ConfigReader.cpp" />
+    <ClCompile Include="Logger.cpp" />
     <ClCompile Include="RPacket.cpp" />
     <ClCompile Include="RUDPClient.cpp" />
     <ClCompile Include="RUDPServer.cpp" />
+    <ClCompile Include="RUDPSocket.cpp" />
     <ClCompile Include="RUDPStream.cpp" />
     <ClCompile Include="Socket.cpp" />
-    <ClCompile Include="SocketUtils.cpp" />
+    <ClCompile Include="SocketException.cpp" />
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
@@ -194,7 +206,9 @@
     <ClCompile Include="StopWatch.cpp" />
     <ClCompile Include="TCPClient.cpp" />
     <ClCompile Include="TCPServer.cpp" />
+    <ClCompile Include="TCPSocket.cpp" />
     <ClCompile Include="TCPStream.cpp" />
+    <ClCompile Include="UDPSocket.cpp" />
     <ClCompile Include="WSAManager.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
