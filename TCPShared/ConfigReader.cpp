@@ -25,7 +25,7 @@ std::vector<std::string> ConfigReader::ReadFile(std::string const & fileName)
 	}
 	else
 	{
-		Logger::PrintF("Config file not found\n");
+		Logger::PrintF(__FILE__, "Config file not found\n");
 	}
 	return lines;
 }

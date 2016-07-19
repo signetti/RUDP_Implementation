@@ -19,6 +19,7 @@ void UDPSocket::SetBroadcast()
 	int broadcastPermission = 1;
 	setsockopt(mSocket, SOL_SOCKET, SO_BROADCAST,
 		(raw_type *)&broadcastPermission, sizeof(broadcastPermission));
+	WSAManager::StoreLastErrorCode();
 }
 
 /*
@@ -79,15 +80,18 @@ bool UDPSocket::SendTo(const void * buffer, uint32_t bufferSize, const std::stri
 	uint32_t bytesSent;
 
 	bytesSent = sendto(mSocket, reinterpret_cast<const raw_type *>(buffer), bufferSize, 0, (sockaddr *)&destAddr, sizeof(destAddr));
+	WSAManager::StoreLastErrorCode();
+
 	if (bytesSent != bufferSize)
 	{
+		/* TODO: Delete
 		std::string message("Send failed (sendto()) with error ");
 		int error = WSAGetLastError();
 		char digits[10];
 		_itoa_s(error, digits, 10);
 		message.append(digits);
-
-		throw SocketException(message.c_str(), true);
+		*/
+		throw SocketException("Send failed (sendto()) with error ", true, true);
 	}
 
 	return (bytesSent != 0);
@@ -115,6 +119,7 @@ bool UDPSocket::ReceiveFrom(void * OutBuffer, uint32_t& InOutBufferSize, std::st
 
 		// Begin Select (delays for response)
 		 state = select(0, &fds, 0, 0, &timeout);
+		 WSAManager::StoreLastErrorCode();
 
 		// Select's return state:
 		switch (state)
@@ -126,18 +131,22 @@ bool UDPSocket::ReceiveFrom(void * OutBuffer, uint32_t& InOutBufferSize, std::st
 	}
 
 	bytesReceived = recvfrom(mSocket, reinterpret_cast<raw_type *>(OutBuffer), InOutBufferSize, 0, (sockaddr *)&clntAddr, (socklen_t *)&addrLen);
+	WSAManager::StoreLastErrorCode();
 
 	if (bytesReceived < 0)
 	{
-		int error = WSAGetLastError();
+		int error = WSAManager::GetLastErrorCode();
 		if (error != WSAEWOULDBLOCK && error != WSAEMSGSIZE)
 		{
+			/*
 			std::string message("Receive failed (sendto()) with error ");
 			char digits[10];
 			_itoa_s(error, digits, 10);
 			message.append(digits);
 
 			throw SocketException(message.c_str(), true);
+			*/
+			throw SocketException("Receive failed (sendto())", true, true);
 		}
 		else return false;
 	}
@@ -146,6 +155,7 @@ bool UDPSocket::ReceiveFrom(void * OutBuffer, uint32_t& InOutBufferSize, std::st
 		// Reassign the newly retrieved address and port
 		OutRemoteAddress = inet_ntoa(clntAddr.sin_addr);
 		OutRemotePort = ntohs(clntAddr.sin_port);
+		WSAManager::StoreLastErrorCode();
 	}
 
 	// Return Bytes Received
@@ -244,18 +254,17 @@ UDPSocket * UDPServerSocket::Accept()
 	uint16_t remotePort;
 	char buffer[1200];
 	uint32_t bufferSize = sizeof(buffer);
-	bool isSuccess = ReceiveFrom(buffer, bufferSize, remoteAddress, remotePort, mMaxTimeout);
-
-	if (isSuccess)
-	{	// Successfully retrieved a UDP message, make the remote sender the connection to establish
-		client->Connect(remoteAddress, remotePort);
-		mClients.push_back(client);
-		return client.get();
-	}
-	else
-	{	// No message received, no connection accepted...
-		return nullptr;
-	}
+	bool isSuccess;
+	
+	do
+	{
+		isSuccess = ReceiveFrom(buffer, bufferSize, remoteAddress, remotePort, mMaxTimeout);
+	} while (!isSuccess);
+	
+	// Successfully retrieved a UDP message, make the remote sender the connection to establish
+	client->Connect(remoteAddress, remotePort);
+	mClients.push_back(client);
+	return client.get();
 }
 uint16_t UDPServerSocket::GetListeningPort()
 {

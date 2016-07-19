@@ -218,7 +218,21 @@ union ackbitfield_t
 		default:	throw std::exception("Index Out Of Range");
 		}
 	}
-	
+
+	uint32_t GetLastIndexAcknowledged()
+	{
+		uint32_t checkBitfield = bitfield;
+		uint32_t count = 0;
+
+		while (checkBitfield != 0)
+		{
+			checkBitfield >>= 1;
+			count++;
+		}
+
+		return count;
+	}
+
 	std::string ToString()
 	{
 		std::stringstream message;

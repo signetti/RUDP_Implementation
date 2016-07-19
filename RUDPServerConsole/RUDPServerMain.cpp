@@ -35,18 +35,18 @@ int __cdecl main()
 	RUDPServerSocket server(DEFAULT_SERVER_PORT_NUMBER, 1500);
 
 	// Listen for and accept a client connection
-	Logger::PrintF("Awaiting Client. . . \n");
+	Logger::PrintF(__FILE__, "Awaiting Client. . . \n");
 	///RUDPStream& client = *server.Accept();
 	RUDPSocket& client = *server.Accept();
 
 	if (client.IsOpen() == false)
 	{
-		Logger::PrintF("Failed to create client connection.");
+		Logger::PrintF(__FILE__, "Failed to create client connection.");
 		return BP(0);
 	}
 
 	// Notify that connection is reached
-	Logger::PrintF("Client-Server Connection Established.\n");
+	Logger::PrintF(__FILE__, "Client-Server Connection Established.\n");
 
 
 	// Create Protocol ID
@@ -59,7 +59,7 @@ int __cdecl main()
 
 	//struct sockaddr client_addr;
 	RPacket data;
-	Logger::PrintF("waiting on port %s\n", DEFAULT_SERVER_PORT);
+	Logger::PrintF(__FILE__, "waiting on port %d\n", DEFAULT_SERVER_PORT_NUMBER);
 	for (;;)
 	{
 		// Receiving Packets
@@ -88,13 +88,13 @@ int __cdecl main()
 				if (index < msg_size)
 				{
 					assert(message != TEST_MESSAGE);
-					Logger::PrintF(".... ERROR: Received Message does not matches Expected Message\ncharacter %2d: \t...%s...\n\n", index
+					Logger::PrintF(__FILE__, ".... ERROR: Received Message does not matches Expected Message\ncharacter %2d: \t...%s...\n\n", index
 						, message.substr(((index - 50 >= 0) ? index - 50 : 0),((index + 50 < msg_size) ? index + 50 : msg_size - 1)).c_str());
 				}
 				else
 				{
 					assert(message == TEST_MESSAGE);
-					Logger::PrintF("==== Received Message matches Expected Message ====\n\n");
+					Logger::PrintF(__FILE__, "==== Received Message matches Expected Message ====\n\n");
 				}
 			}
 		}
@@ -112,15 +112,15 @@ int __cdecl main()
 
 			if (!isSuccess)
 			{
-				Logger::PrintF("message: Not an RUDP packet\n");
+				Logger::PrintF(__FILE__, "message: Not an RUDP packet\n");
 			}
 			else
 			{
-				Logger::PrintF("message [%d bytes]:\t(seq:%d ack:%d ack_bit:%d)\t%s\n"
+				Logger::PrintF(__FILE__, "message [%d bytes]:\t(seq:%d ack:%d ack_bit:%d)\t%s\n"
 					, bytesReceived, data.Sequence(), data.Ack(), data.AckBitfield(), data.Message().c_str());
 			}
 
-			Logger::PrintF("waiting on port %s\n", DEFAULT_SERVER_PORT);
+			Logger::PrintF(__FILE__, "waiting on port %s\n", DEFAULT_SERVER_PORT);
 		}*/
 	}
 }

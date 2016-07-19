@@ -1,4 +1,5 @@
 #include "stdafx.h"
+#include "Logger.h"
 
 TCPServer::TCPServer(const std::string& listenPort) : mListenSocket(INVALID_SOCKET), mInfo(NULL), mPort(listenPort)
 {
@@ -54,7 +55,7 @@ bool TCPServer::CreateSocket()
 		result = getaddrinfo(NULL, mPort.c_str(), &hints, &mInfo);
 		if (result != 0)
 		{
-			printf("getaddrinfo failed with error: %d\n", result);
+			Logger::PrintF(__FILE__, "getaddrinfo failed with error: %d\n", result);
 			mInfo = NULL;
 			return false;
 		}
@@ -64,7 +65,7 @@ bool TCPServer::CreateSocket()
 	mListenSocket = socket(mInfo->ai_family, mInfo->ai_socktype, mInfo->ai_protocol);
 	if (mListenSocket == INVALID_SOCKET)
 	{
-		printf("socket failed with error: %ld\n", WSAGetLastError());
+		Logger::PrintF(__FILE__, "socket failed with error: %ld\n", WSAGetLastError());
 		return false;
 	}
 	else return true;
@@ -84,7 +85,7 @@ bool TCPServer::Bind()
 	result = bind(mListenSocket, mInfo->ai_addr, (int)mInfo->ai_addrlen);
 	if (result == SOCKET_ERROR)
 	{
-		printf("bind failed with error: %d\n", WSAGetLastError());
+		Logger::PrintF(__FILE__, "bind failed with error: %d\n", WSAGetLastError());
 		closesocket(mListenSocket);
 		return false;
 	}
@@ -104,7 +105,7 @@ bool TCPServer::Listen()
 	result = listen(mListenSocket, SOMAXCONN);
 	if (result == SOCKET_ERROR)
 	{
-		printf("listen failed with error: %d\n", WSAGetLastError());
+		Logger::PrintF(__FILE__, "listen failed with error: %d\n", WSAGetLastError());
 		closesocket(mListenSocket);
 		mListenSocket = INVALID_SOCKET;
 		return false;
@@ -118,7 +119,7 @@ TCPStream TCPServer::Accept()
 	SOCKET clientSocket = accept(mListenSocket, NULL, NULL);
 	if (clientSocket == INVALID_SOCKET)
 	{
-		printf("accept failed with error: %d\n", WSAGetLastError());
+		Logger::PrintF(__FILE__, "accept failed with error: %d\n", WSAGetLastError());
 		closesocket(mListenSocket);
 		mListenSocket = INVALID_SOCKET;
 	}

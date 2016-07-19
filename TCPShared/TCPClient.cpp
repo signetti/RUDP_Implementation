@@ -1,4 +1,5 @@
 #include "stdafx.h"
+#include "Logger.h"
 
 SOCKET TCPClient::GetServerSocket(struct addrinfo * info)
 {
@@ -14,7 +15,7 @@ SOCKET TCPClient::GetServerSocket(struct addrinfo * info)
 
 		if (serverSocket == INVALID_SOCKET)
 		{
-			printf("socket failed with error: %ld\n", WSAGetLastError());
+			Logger::PrintF(__FILE__, "socket failed with error: %ld\n", WSAGetLastError());
 			return INVALID_SOCKET;
 		}
 
@@ -30,7 +31,7 @@ SOCKET TCPClient::GetServerSocket(struct addrinfo * info)
 
 	if (serverSocket == INVALID_SOCKET)
 	{
-		printf("Unable to connect to server!\n");
+		Logger::PrintF(__FILE__, "Unable to connect to server!\n");
 	}
 
 	return serverSocket;
@@ -53,7 +54,7 @@ SOCKET TCPClient::InitializeClient(const char * ip, char * port)
 	result = getaddrinfo(ip, port, &hints, &info);
 	if (result != 0)
 	{
-		printf("getaddrinfo failed with error: %d\n", result);
+		Logger::PrintF(__FILE__, "getaddrinfo failed with error: %d\n", result);
 		return INVALID_SOCKET;
 	}
 

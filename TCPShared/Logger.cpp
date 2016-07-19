@@ -1,21 +1,14 @@
 #include "stdafx.h"
-#include "Logger.h"
 
-#include <stdio.h>		// For variadic function
-#include <stdarg.h>		// For variadic function
-
-#include <time.h>		// For Current Date/Time
-
-#define LOG_PRINT_SCREEN	true
-#define LOG_PRINT_FILE		true
 
 std::ofstream Logger::sLogFile;
 const std::string Logger::DEFAULT_FILE_NAME = "rudp_log";
 const std::string Logger::DEFAULT_FILE_EXTENSION = "txt";
 
 Logger Logger::_instance;
+std::map<std::string, Logger::log_info_t> Logger::sLogInfoMap;
+const Logger::log_info_t Logger::DEFAULT_LOG_INFO;
 
-#ifdef LOG_PRINT_FILE
 Logger::Logger()
 {
 	std::stringstream fileNameStream;
@@ -29,54 +22,91 @@ Logger::~Logger()
 {
 	sLogFile.close();
 }
-#else
-Logger::Logger() {}
-Logger::~Logger() {}
-#endif
 
-void Logger::PrintScreen_Helper(std::vector<colored_string> messages)
+const Logger::log_info_t & Logger::GetLogInfo(const std::string & logDescriptor)
 {
-
-	for (auto& message : messages)
+	auto found = sLogInfoMap.find(logDescriptor);
+	if (found != sLogInfoMap.end())
 	{
-#ifdef LOG_PRINT_SCREEN
-		// Print in Color
-		SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), (WORD)message.Color() | FOREGROUND_INTENSITY);
-		printf("%s", message.c_str());
-		SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), FOREGROUND_BLUE | FOREGROUND_GREEN | FOREGROUND_RED);
-#endif
-#ifdef LOG_PRINT_FILE
-		sLogFile << message;
-#endif
+		return found->second;
 	}
-
-#ifdef LOG_PRINT_SCREEN
-	printf("\n");
-#endif
-
+	return DEFAULT_LOG_INFO;
 }
 
-int Logger::PrintF_Helper(BasicColor color, const char * format, va_list args)
+#define logInfo logInfo		// For Visual Studio coloring
+
+void Logger::PrintScreen_Helper(const std::string& logDescriptor, const std::vector<colored_string>& messages)
 {
+	// Grab Logging State
+	const log_info_t& logInfo = GetLogInfo(logDescriptor);
+	if (logInfo.IsLoggingAllowed() == false)
+	{	// Nothing to log!
+		return;
+	}
+
+	if (logInfo.LogToScreen)
+	{	// Print to Screen
+		for (auto& message : messages)
+		{
+			BasicColor color = message.Color();
+
+			// Set to Default Color if assigned
+			if (color == BasicColor::DEFAULT)
+			{
+				color = logInfo.DefaultColor;
+			}
+
+			// Print in Color
+			SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), (WORD)color | FOREGROUND_INTENSITY);
+			printf("%s", message.c_str());
+			SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), FOREGROUND_BLUE | FOREGROUND_GREEN | FOREGROUND_RED);
+		}
+		printf("\n");
+	}
+
+	if (logInfo.LogToFile)
+	{	// Write to File
+		for (auto& message : messages)
+		{
+			sLogFile << message;
+		}
+	}
+}
+
+int Logger::PrintF_Helper(const std::string& logDescriptor, BasicColor color, const char * format, va_list args)
+{
+	// Grab Logging State
+	const log_info_t& logInfo = GetLogInfo(logDescriptor);
+	if (logInfo.IsLoggingAllowed() == false)
+	{	// Nothing to log!
+		return 0;
+	}
+
 	int state = 0;
 
-#ifdef LOG_PRINT_SCREEN
-	SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), (WORD)color | FOREGROUND_INTENSITY);
-	state = vfprintf(stdout, format, args);
-	SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), FOREGROUND_BLUE | FOREGROUND_GREEN | FOREGROUND_RED);
-#endif
-#ifdef LOG_PRINT_FILE
+	// Set to Default Color if assigned
+	if (color == BasicColor::DEFAULT)
 	{
+		color = logInfo.DefaultColor;
+	}
+
+	if (logInfo.LogToScreen)
+	{	// Print to Screen (in Color)
+		SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), (WORD)color | FOREGROUND_INTENSITY);
+		state = vfprintf(stdout, format, args);
+		SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), FOREGROUND_BLUE | FOREGROUND_GREEN | FOREGROUND_RED);
+	}
+
+	if (logInfo.LogToFile)
+	{	// Write to File
 		char buffer[1024];
 		memset(buffer, '\0', sizeof(buffer));
 		vsnprintf(buffer, sizeof(buffer), format, args);
 		sLogFile << buffer;
 	}
-#endif
 
 	return state;
 }
-
 
 std::string Logger::GetTimeStamp()
 {
@@ -93,19 +123,19 @@ std::string Logger::GetTimeStamp()
 	return buf;
 }
 
-void Logger::PrintScreen(const std::string & message, BasicColor color)
+void Logger::PrintScreen(const std::string& logDescriptor, const std::string & message, BasicColor color)
 {
-	PrintScreen_Helper({colored_string(message, color)});
+	PrintScreen_Helper(logDescriptor, {colored_string(message, color)});
 }
 
-int Logger::PrintF(const char * format, ...)
+int Logger::PrintF(const std::string& logDescriptor, const char * format, ...)
 {
 	// Handle Variadic Function Behavior (similar to printf)
 	va_list args;
 	va_start(args, format);
 
 	// Pass down Function Call
-	int state = PrintF_Helper(BasicColor::WHITE, format, args);
+	int state = PrintF_Helper(logDescriptor, BasicColor::DEFAULT, format, args);
 
 	// Clean Arguments
 	va_end(args);
@@ -113,14 +143,14 @@ int Logger::PrintF(const char * format, ...)
 	return state;
 }
 
-int Logger::PrintF(BasicColor color, const char * format, ...)
+int Logger::PrintF(const std::string& logDescriptor, BasicColor color, const char * format, ...)
 {
 	// Handle Variadic Function Behavior (similar to printf)
 	va_list args;
 	va_start(args, format);
 
 	// Pass down Function Call
-	int state = PrintF_Helper(color, format, args);
+	int state = PrintF_Helper(logDescriptor, color, format, args);
 
 	// Clean Arguments
 	va_end(args);
@@ -128,19 +158,19 @@ int Logger::PrintF(BasicColor color, const char * format, ...)
 	return state;
 }
 
-void Logger::PrintError(const std::string & message)
+void Logger::PrintError(const std::string& logDescriptor, const std::string & message)
 {
-	PrintScreen(message, BasicColor::RED);
+	PrintScreen(logDescriptor, colored_string(message, BasicColor::RED));
 }
 
-int Logger::PrintErrorF(const char * format, ...)
+int Logger::PrintErrorF(const std::string& logDescriptor, const char * format, ...)
 {
 	// Handle Variadic Function Behavior (similar to printf)
 	va_list args;
 	va_start(args, format);
 
 	// Pass down Function Call
-	int state = PrintF(BasicColor::RED, format, args);
+	int state = PrintF(logDescriptor, BasicColor::RED, format, args);
 
 	// Clean Arguments
 	va_end(args);

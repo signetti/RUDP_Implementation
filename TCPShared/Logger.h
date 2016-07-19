@@ -6,32 +6,25 @@
 #include <iostream>
 #include <fstream>
 
+#include <map>
+
 #include "ImmediateFunctionCall.h"
-/*	Macro Helpers
-#define FOREGROUND_CYAN	FOREGROUND_BLUE | FOREGROUND_GREEN
-#define FOREGROUND_YELLOW	FOREGROUND_GREEN |FOREGROUND_RED
 
-#define Logger::PrintF_COLOR(Color,...)																						\
-{																													\
-	SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), Color | FOREGROUND_INTENSITY);							\
-	Logger::PrintF(__VA_ARGS__);																							\
-	SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), FOREGROUND_BLUE | FOREGROUND_GREEN | FOREGROUND_RED)	\
-}
+#define LOGGER_SET_FILE_STATE(LogToScreen, LogToFile, DefaultColor)\
+ static ImmediateFunctionCall<> setLogState([] { Logger::SetLoggerState(__FILE__, LogToScreen, LogToFile, DefaultColor); })
 
-#define Logger::PrintF_ERROR(...)	Logger::PrintF_COLOR(FOREGROUND_RED, __VA_ARGS__);
-
-*/
 /*	Basic Colors
 */
 enum class BasicColor
 {
-	BLUE	= FOREGROUND_BLUE,
-	GREEN	= FOREGROUND_GREEN,
-	RED		= FOREGROUND_RED,
+	BLUE	= 0x0001,	//FOREGROUND_BLUE,
+	GREEN	= 0x0002,	//FOREGROUND_GREEN,
+	RED		= 0x0004,	//FOREGROUND_RED,
 	YELLOW	= GREEN | RED,
 	CYAN	= BLUE | GREEN,
 	PURPLE	= BLUE | RED,
 	WHITE	= BLUE | GREEN | RED,
+	DEFAULT
 };
 
 /* Colored String
@@ -55,49 +48,73 @@ class Logger
 {
 
 private:
+	struct log_info_t
+	{
+		bool LogToScreen;
+		bool LogToFile;
+		BasicColor DefaultColor;
+
+		log_info_t(bool logToScreen = true, bool logToFile = false, BasicColor defaultColor = BasicColor::WHITE)
+			: LogToScreen(logToScreen), LogToFile(logToFile), DefaultColor(defaultColor) {}
+
+		bool IsLoggingAllowed() const { return LogToScreen || LogToFile; }
+	};
+
+private:
 	static std::ofstream sLogFile;
 	static const std::string DEFAULT_FILE_NAME;
 	static const std::string DEFAULT_FILE_EXTENSION;
 
 	static Logger _instance;
+
+	static std::map<std::string, log_info_t> sLogInfoMap;
+	static const log_info_t DEFAULT_LOG_INFO;
+
 private:
 	Logger();
 	~Logger();
 	
-	// Helper for the Variadic Template Function (for less code-bloat)
-	static void PrintScreen_Helper(std::vector<colored_string> messages);
+	//
+	static const log_info_t& GetLogInfo(const std::string& logDescriptor);
 
 	// Helper for the Variadic Template Function (for less code-bloat)
-	static int PrintF_Helper(BasicColor color, const char * format, va_list args);
+	static void PrintScreen_Helper(const std::string& logDescriptor, const std::vector<colored_string>& messages);
+
+	// Helper for the Variadic Template Function (for less code-bloat)
+	static int PrintF_Helper(const std::string& logDescriptor, BasicColor color, const char * format, va_list args);
 
 	// Get Time Stamp
 	// http://stackoverflow.com/questions/997946/how-to-get-current-time-and-date-in-c
 	static std::string GetTimeStamp();
+
+
 public:
 	// ============ Basic Print Functions ============
-	static void PrintScreen(const std::string& message, BasicColor color = BasicColor::WHITE);
+	static void PrintScreen(const std::string& logDescriptor, const std::string& message, BasicColor color = BasicColor::DEFAULT);
 
 	template <class... Messages>
-	static void PrintScreen(Messages... messages);
+	static void PrintScreen(const std::string& logDescriptor, Messages... messages);
 
-	static int PrintF(const char * formatted, ...);
+	static int PrintF(const std::string& logDescriptor, const char * formatted, ...);
 
-	static int PrintF(BasicColor color, const char * formatted, ...);
+	static int PrintF(const std::string& logDescriptor, BasicColor color, const char * formatted, ...);
 
 	// ============ Special Print Functions =============
-	static void PrintError(const std::string& message);
+	static void PrintError(const std::string& logDescriptor, const std::string& message);
 
-	static int PrintErrorF(const char * format, ...);
+	static int PrintErrorF(const std::string& logDescriptor, const char * format, ...);
+
+	static void SetLoggerState(const std::string& logDescriptor, bool LogToScreen, bool LogToFile, BasicColor DefaultColor)
+	{
+		log_info_t logInfo(LogToScreen, LogToFile, DefaultColor);
+		auto& mapping = sLogInfoMap.operator[](logDescriptor);
+		mapping = logInfo;
+	}
 };
 
 template<class... Messages>
-inline void Logger::PrintScreen(Messages... messages)
+inline void Logger::PrintScreen(const std::string& logDescriptor, Messages... messages)
 {
-	std::vector<colored_string> messageList;
-	for (colored_string& message : messages)
-	{
-		messageList.push_back(message);
-	}
-
-	PrintScreen_Helper(messageList);
+	std::vector<colored_string> messageList = {messages...};
+	PrintScreen_Helper(logDescriptor, messageList);
 }

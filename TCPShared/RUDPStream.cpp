@@ -159,7 +159,7 @@ RUDPStream::RUDPStream(const std::shared_ptr<UDPSocket>& socket, std::string toA
 	DWORD NON_BLOCKING = TRUE;
 	if (ioctlsocket(mSocket, FIONBIO, &NON_BLOCKING) != 0)
 	{
-		Logger::PrintF("RUDPStream failed to set non-blocking\n");
+		Logger::PrintF(__FILE__, "RUDPStream failed to set non-blocking\n");
 	}
 	*/
 }
@@ -286,17 +286,17 @@ bool RUDPStream::ReceiveValidPacket(uint32_t & OutBytesReceived, RPacket & OutPa
 		// Check if Packet is RUDP Packet
 		if (!isSuccess)
 		{	// Packet is not an RUDP Packet, ignore...
-			Logger::PrintErrorF(".... Not an RUDP Packet: expected id<%d>, actual id<%d>\n", OutPacket.RUDP_ID, OutPacket.Id());
+			Logger::PrintErrorF(__FILE__, ".... Not an RUDP Packet: expected id<%d>, actual id<%d>\n", OutPacket.RUDP_ID, OutPacket.Id());
 		}
 		else
 		{	// RPacket successfully received. Return successful
 
 			// DEBUG: For Debugging Purposes only
-			Logger::PrintF("---- Rcvd [%5lld us]: ", currentTime()); 
-			Logger::PrintF(BasicColor::YELLOW, "ack<%d> ", OutPacket.Ack());
-			Logger::PrintF(BasicColor::CYAN,"seq<%d> ", OutPacket.Sequence()); 
-			Logger::PrintF(BasicColor::YELLOW, "bit<%s> ", OutPacket.AckBitfield().ToString().c_str());
-			Logger::PrintF("msg_id<%d> frag<%d> bytes_rcvd<%d>\n", OutPacket.MessageId(), OutPacket.FragmentCount(), static_cast<uint32_t>(OutPacket.Buffer().size()));
+			Logger::PrintF(__FILE__, "---- Rcvd [%5lld us]: ", currentTime()); 
+			Logger::PrintF(__FILE__, BasicColor::YELLOW, "ack<%d> ", OutPacket.Ack());
+			Logger::PrintF(__FILE__, BasicColor::CYAN,"seq<%d> ", OutPacket.Sequence()); 
+			Logger::PrintF(__FILE__, BasicColor::YELLOW, "bit<%s> ", OutPacket.AckBitfield().ToString().c_str());
+			Logger::PrintF(__FILE__, "msg_id<%d> frag<%d> bytes_rcvd<%d>\n", OutPacket.MessageId(), OutPacket.FragmentCount(), static_cast<uint32_t>(OutPacket.Buffer().size()));
 			return true;
 		}
 	}
@@ -323,7 +323,7 @@ bool RUDPStream::SendPacket(uint32_t& OutBytesSent, const RPacket & packet)
 	}
 	catch (SocketException ex)
 	{
-		Logger::PrintErrorF(".... sendto failed with error: %d %s\n", WSAGetLastError(), ex.what());
+		Logger::PrintErrorF(__FILE__, ".... sendto failed with error: %d %s\n", WSAGetLastError(), ex.what());
 		return false;
 	}
 
@@ -331,7 +331,7 @@ bool RUDPStream::SendPacket(uint32_t& OutBytesSent, const RPacket & packet)
 	OutBytesSent = (packetSize > 0) ? static_cast<uint32_t>(packetSize) : 0U;
 
 	// DEBUG: For Debugging Purposes only
-	Logger::PrintF("++++ Sent [%5lld us]: seq<%d> ack<%d> bit<%s> msg_id<%d> frag<%d> bytes_sent<%d>\n"
+	Logger::PrintF(__FILE__, "++++ Sent [%5lld us]: seq<%d> ack<%d> bit<%s> msg_id<%d> frag<%d> bytes_sent<%d>\n"
 		, currentTime(), packet.Sequence(), packet.Ack(), packet.AckBitfield().ToString().c_str()
 		, packet.MessageId(), packet.FragmentCount(), static_cast<uint32_t>(packet.Buffer().size()));
 
@@ -373,7 +373,7 @@ int RUDPStream::Send(const uint8_t * data, uint32_t sizeOfData)
 
 	// DEBUG: For Debugging Purposes only
 	currentTime(true);
-	Logger::PrintF("==== Begin Sending to %s:%d: seq_num<%d> remote_seq_num<%d> msg_id<%d> max_time<%d>\n"
+	Logger::PrintF(__FILE__, "==== Begin Sending to %s:%d: seq_num<%d> remote_seq_num<%d> msg_id<%d> max_time<%d>\n"
 		, mToAddress.c_str(), mToPort, mSequenceNumber, mRemoteSequenceNumber, mMessageId, mMaxConnectionTimeOut);
 
 	// Check if Fragmentation is Required
@@ -393,7 +393,7 @@ int RUDPStream::Send(const uint8_t * data, uint32_t sizeOfData)
 		}
 		catch (SocketException ex)
 		{
-			Logger::PrintErrorF(".... sendto failed with error: %s\n", ex.what());
+			Logger::PrintErrorF(__FILE__, ".... sendto failed with error: %s\n", ex.what());
 			return false;
 		}
 		totalBytesSent = packetSize;
@@ -405,7 +405,7 @@ int RUDPStream::Send(const uint8_t * data, uint32_t sizeOfData)
 		mSequenceNumber++;
 
 		// DEBUG: For Debug Purposes only
-		//Logger::PrintF("message sent [%d bytes]:\t(seq:%d ack:%d ack_bit:%d msg_size:%d)\n"
+		//Logger::PrintF(__FILE__, "message sent [%d bytes]:\t(seq:%d ack:%d ack_bit:%d msg_size:%d)\n"
 		//	, totalBytesSent, packet.Sequence(), packet.Ack(), packet.AckBitfield().bitfield, sizeOfData);
 	}
 	else
@@ -464,9 +464,9 @@ int RUDPStream::Send(const uint8_t * data, uint32_t sizeOfData)
 					mSequenceNumber += numberOfFragments - fragment;
 					mRemoteSequenceNumber += numberOfFragments;
 
-					Logger::PrintF("==== Sending Failed. No acknowledgement received during send before escaping window.\n");
+					Logger::PrintF(__FILE__, "==== Sending Failed. No acknowledgement received during send before escaping window.\n");
 
-					Logger::PrintF("==== Final State: [% 5lld us]: seq_num<%d> remote_seq_num<%d> msg_id<%d> max_time<%d> msg_size<%d> bytes_sent<%d>\n"
+					Logger::PrintF(__FILE__, "==== Final State: [% 5lld us]: seq_num<%d> remote_seq_num<%d> msg_id<%d> max_time<%d> msg_size<%d> bytes_sent<%d>\n"
 						, currentTime(), mSequenceNumber, mRemoteSequenceNumber, mMessageId, mMaxConnectionTimeOut, sizeOfData, totalBytesSent);
 					return -1;
 				}
@@ -508,12 +508,12 @@ int RUDPStream::Send(const uint8_t * data, uint32_t sizeOfData)
 
 					if (packet.Sequence() < mRemoteSequenceNumber)
 					{	// Old Packet received...
-						Logger::PrintErrorF(".... Received packet for old message, ignored...\n");
+						Logger::PrintErrorF(__FILE__, ".... Received packet for old message, ignored...\n");
 						continue;
 					}
 					else if (packet.Sequence() >= mRemoteSequenceNumber + numberOfFragments)
 					{	// Packet outside of range received...
-						Logger::PrintErrorF(".... Received packet for new message detected, ignored...\n");
+						Logger::PrintErrorF(__FILE__, ".... Received packet for new message detected, ignored...\n");
 						continue;
 					}
 
@@ -530,7 +530,7 @@ int RUDPStream::Send(const uint8_t * data, uint32_t sizeOfData)
 						// DEBUG: For Debug Purposes Only
 						if (packetOffset != 1)
 						{
-							Logger::PrintErrorF(".... Packet Re-ordering Detected! expected<%d> actual<%d>\n", lastReceivedRemoteSequenceNumber + 1, packet.Sequence());
+							Logger::PrintErrorF(__FILE__, ".... Packet Re-ordering Detected! expected<%d> actual<%d>\n", lastReceivedRemoteSequenceNumber + 1, packet.Sequence());
 						}
 
 						// Create Bitmask to check all the ack_bits that will be shifted off (starting from the end bit31)
@@ -541,7 +541,7 @@ int RUDPStream::Send(const uint8_t * data, uint32_t sizeOfData)
 						{	// If the last N bits do not all equal true (N = packetOffset), then at least one packet shifted was not acknowledged
 
 							// TODO: Handle unacknowledged packet...
-							Logger::PrintErrorF(".... Packet Loss detected, but currently ignoring...\n");
+							Logger::PrintErrorF(__FILE__, ".... Packet Loss detected, but currently ignoring...\n");
 						}
 
 						// Include all 32 results of acknowledged bitfield received (using OR gate logic)
@@ -557,7 +557,7 @@ int RUDPStream::Send(const uint8_t * data, uint32_t sizeOfData)
 
 						if (packetOffset >= RPacket::NumberOfAcksPerPacket)
 						{	// DEBUG: For Debug Purposes Only
-							Logger::PrintErrorF(".... Ack Received, but not able to Set value...\n");
+							Logger::PrintErrorF(__FILE__, ".... Ack Received, but not able to Set value...\n");
 						}
 						else
 						{	// Set the ack_bit for the respective acknowledged number received
@@ -602,24 +602,24 @@ int RUDPStream::Send(const uint8_t * data, uint32_t sizeOfData)
 					mSequenceNumber += numberOfFragments - fragment;
 					mRemoteSequenceNumber += numberOfFragments;
 
-					Logger::PrintF("==== Sending Failed. No acknowledgement received during send. Connection Timed-Out\n");
+					Logger::PrintF(__FILE__, "==== Sending Failed. No acknowledgement received during send. Connection Timed-Out\n");
 
-					Logger::PrintF("==== Final State: [% 5lld us]: seq_num<%d> remote_seq_num<%d> msg_id<%d> max_time<%d> msg_size<%d> bytes_sent<%d>\n"
+					Logger::PrintF(__FILE__, "==== Final State: [% 5lld us]: seq_num<%d> remote_seq_num<%d> msg_id<%d> max_time<%d> msg_size<%d> bytes_sent<%d>\n"
 						, currentTime(), mSequenceNumber, mRemoteSequenceNumber, mMessageId, mMaxConnectionTimeOut, sizeOfData, totalBytesSent);
 					return -1;
 				}
 
 				// DEBUG: For Debugging Purposes only
-				Logger::PrintF(BasicColor::YELLOW,"          Internal State:   local_ack_bit:  (%d) %s\n"
+				Logger::PrintF(__FILE__, BasicColor::YELLOW,"          Internal State:   local_ack_bit:  (%d) %s\n"
 					, mSequenceNumber, localAcknowledgedBitfield.ToString().c_str());
 				// DEBUG: For debugging purpose only
-				Logger::PrintF(BasicColor::CYAN, "          Internal State:   remote_ack_bit: (%d) %s\n"
+				Logger::PrintF(__FILE__, BasicColor::CYAN, "          Internal State:   remote_ack_bit: (%d) %s\n"
 					, lastReceivedRemoteSequenceNumber, remoteAcknowledgedBitfield.ToString().c_str());
 
 				// ============== Check Condition to Continue Receiving Packets =================
 				if (fragment >= numberOfFragments - 1)
 				{
-					Logger::PrintF("Exit Condition: isMostRecent=%s localAckBit=%s remoteAckBit=%s expected<%d> current<%d>\n"
+					Logger::PrintF(__FILE__, "Exit Condition: isMostRecent=%s localAckBit=%s remoteAckBit=%s expected<%d> current<%d>\n"
 						,(isMostRecentAcknowledged) ?"true":"false"
 						, localAcknowledgedBitfield.IsAll(true) ? "true" : "false"
 						, remoteAcknowledgedBitfield.IsAll(true) ? "true" : "false"
@@ -649,8 +649,8 @@ int RUDPStream::Send(const uint8_t * data, uint32_t sizeOfData)
 
 
 	// DEBUG: For Debug Purposes Only!
-	Logger::PrintF("==== Successful Sending\n");
-	Logger::PrintF("==== Final State: [% 5lld us]: seq_num<%d> remote_seq_num<%d> msg_id<%d> max_time<%d> msg_size<%d> bytes_sent<%d>\n"
+	Logger::PrintF(__FILE__, "==== Successful Sending\n");
+	Logger::PrintF(__FILE__, "==== Final State: [% 5lld us]: seq_num<%d> remote_seq_num<%d> msg_id<%d> max_time<%d> msg_size<%d> bytes_sent<%d>\n"
 		, currentTime(), mSequenceNumber, mRemoteSequenceNumber, mMessageId, mMaxConnectionTimeOut, sizeOfData, totalBytesSent);
 
 	assert(currentSizeOfData == 0);				// Number of data left to transmit should be zero!
@@ -702,9 +702,9 @@ int RUDPStream::Receive(char * OutBuffer, uint32_t sizeOfBuffer)
 				mSequenceNumber += fragmentCount;
 				mRemoteSequenceNumber += fragmentCount;
 
-				Logger::PrintF("==== Receiving Failed: Connection Timed-Out ====\n");
+				Logger::PrintF(__FILE__, "==== Receiving Failed: Connection Timed-Out ====\n");
 
-				Logger::PrintF("==== Final State [% 5lld us]: seq_num<%d> remote_seq_num<%d> msg_id<%d> max_time<%d> bytes_rcvd<0>\n"
+				Logger::PrintF(__FILE__, "==== Final State [% 5lld us]: seq_num<%d> remote_seq_num<%d> msg_id<%d> max_time<%d> bytes_rcvd<0>\n"
 					, currentTime(), mSequenceNumber, mRemoteSequenceNumber, mMessageId, mMaxConnectionTimeOut);
 
 				return -1;
@@ -724,7 +724,7 @@ int RUDPStream::Receive(char * OutBuffer, uint32_t sizeOfBuffer)
 		// Determine if Packet is within a valid range
 		if (packetOffset < 0 || packetOffset >= RPacket::NumberOfAcksPerPacket)
 		{
-			Logger::PrintErrorF(".... RUDP Packet is not within a valid range: current<%d>, received<%d>, dif<%d>\n"
+			Logger::PrintErrorF(__FILE__, ".... RUDP Packet is not within a valid range: current<%d>, received<%d>, dif<%d>\n"
 				, oldestRSNfromWindow, receivedRemoteSequenceNumber, packetOffset);
 
 			continue;
@@ -732,12 +732,12 @@ int RUDPStream::Receive(char * OutBuffer, uint32_t sizeOfBuffer)
 
 		if (receivedRemoteSequenceNumber < mRemoteSequenceNumber)
 		{	// Old Packet received...
-			Logger::PrintErrorF(".... Packet for new message detected, but ignored...\n");
+			Logger::PrintErrorF(__FILE__, ".... Packet for new message detected, but ignored...\n");
 			continue;
 		}
 		else if (!isFirstPacket && receivedRemoteSequenceNumber >= mRemoteSequenceNumber + fragmentCount)
 		{	// Packet outside of range received...
-			Logger::PrintErrorF(".... Packet for new message detected, but ignored...\n");
+			Logger::PrintErrorF(__FILE__, ".... Packet for new message detected, but ignored...\n");
 			continue;
 		}
 		
@@ -760,7 +760,7 @@ int RUDPStream::Receive(char * OutBuffer, uint32_t sizeOfBuffer)
 
 			// DEBUG: For Debugging Purposes only
 			currentTime(true);
-			Logger::PrintF("==== Begin Receiving from %s:%d : seq<%d> remote_seq<%d> msg_id<%d> frag<%d> bytes_rcvd<%d> max_time<%d>\n"
+			Logger::PrintF(__FILE__, "==== Begin Receiving from %s:%d : seq<%d> remote_seq<%d> msg_id<%d> frag<%d> bytes_rcvd<%d> max_time<%d>\n"
 				, mToAddress.c_str(), mToPort, mSequenceNumber, mRemoteSequenceNumber, mMessageId
 				, (int)fragmentCount,packet.Buffer().size(), mMaxConnectionTimeOut);
 		
@@ -781,7 +781,7 @@ int RUDPStream::Receive(char * OutBuffer, uint32_t sizeOfBuffer)
 			// DEBUG: For Debug Purposes Only
 			if (packetOffset != 1)
 			{
-				Logger::PrintErrorF(".... Packet Re-ordering Detected! expected<%d> actual<%d>\n", newestRSNfromWindow + 1, receivedRemoteSequenceNumber);
+				Logger::PrintErrorF(__FILE__, ".... Packet Re-ordering Detected! expected<%d> actual<%d>\n", newestRSNfromWindow + 1, receivedRemoteSequenceNumber);
 			}
 
 			// Shift Window accordingly
@@ -813,13 +813,13 @@ int RUDPStream::Receive(char * OutBuffer, uint32_t sizeOfBuffer)
 					{	// Packet was never acknowledged, return unsuccessful submission
 
 						// TODO: Handle packet loss case better...
-						Logger::PrintErrorF(".... Packet Loss Detected! Receive Cannot complete. . .\n");
+						Logger::PrintErrorF(__FILE__, ".... Packet Loss Detected! Receive Cannot complete. . .\n");
 						
 						// Adjust expected sequence number
 						mSequenceNumber += fragmentCount;
 						mRemoteSequenceNumber += fragmentCount;
 
-						Logger::PrintF("==== Final State [% 5lld us]: seq_num<%d> remote_seq_num<%d> msg_id<%d> max_time<%d> bytes_rcvd<0>\n"
+						Logger::PrintF(__FILE__, "==== Final State [% 5lld us]: seq_num<%d> remote_seq_num<%d> msg_id<%d> max_time<%d> bytes_rcvd<0>\n"
 							, currentTime(), mSequenceNumber, mRemoteSequenceNumber, mMessageId, mMaxConnectionTimeOut);
 						return -1;
 					}
@@ -851,7 +851,7 @@ int RUDPStream::Receive(char * OutBuffer, uint32_t sizeOfBuffer)
 			}
 			else
 			{	// Packet already acknowledged, redundant packet ignored...
-				Logger::PrintErrorF(".... Redundant Packet Detected: seq<%d>\n", receivedRemoteSequenceNumber);
+				Logger::PrintErrorF(__FILE__, ".... Redundant Packet Detected: seq<%d>\n", receivedRemoteSequenceNumber);
 				continue;
 			}
 		}
@@ -859,16 +859,16 @@ int RUDPStream::Receive(char * OutBuffer, uint32_t sizeOfBuffer)
 		{	// Packet is currently newest packet received prior, redunant packet ignored...
 			assert(!window.IsEmpty() || window.Back().IsAcknowledged);
 
-			Logger::PrintErrorF(".... Redundant Packet Detected: seq<%d>\n", receivedRemoteSequenceNumber);
+			Logger::PrintErrorF(__FILE__, ".... Redundant Packet Detected: seq<%d>\n", receivedRemoteSequenceNumber);
 			continue;
 		}
 
 		// DEBUG: For Debugging Purposes only
-		Logger::PrintF(BasicColor::YELLOW, "          Internal State:   local_ack_bit:  (%d) %s\n"
+		Logger::PrintF(__FILE__, BasicColor::YELLOW, "          Internal State:   local_ack_bit:  (%d) %s\n"
 			, lastSentPacketAcknowledged, localAcknowledgedBitfield.ToString().c_str());
 
 		// DEBUG: For debugging purpose only
-		Logger::PrintF(BasicColor::CYAN, "          Internal State:   remote_ack_bit: (%d) %s\n"
+		Logger::PrintF(__FILE__, BasicColor::CYAN, "          Internal State:   remote_ack_bit: (%d) %s\n"
 			, receivedRemoteSequenceNumber, remoteAcknowledgedBitfield.ToString().c_str());
 
 
@@ -901,7 +901,7 @@ int RUDPStream::Receive(char * OutBuffer, uint32_t sizeOfBuffer)
 				{	// If the last N bits do not all equal true (N = packetOffset), then at least one packet shifted was not acknowledged
 
 					// TODO: Handle unacknowledged packet...
-					Logger::PrintErrorF(".... Packet Loss detected, but currently ignoring...\n");
+					Logger::PrintErrorF(__FILE__, ".... Packet Loss detected, but currently ignoring...\n");
 				}
 
 				// Include all 32 results of acknowledged bitfield received (using OR gate logic)
@@ -917,7 +917,7 @@ int RUDPStream::Receive(char * OutBuffer, uint32_t sizeOfBuffer)
 
 				if (packetOffset >= RPacket::NumberOfAcksPerPacket)
 				{	// DEBUG: For Debug Purposes Only
-					Logger::PrintErrorF(".... Ack Received, but not able to Set value...\n");
+					Logger::PrintErrorF(__FILE__, ".... Ack Received, but not able to Set value...\n");
 				}
 				else
 				{	// Set the ack_bit for the respective acknowledged number received
@@ -931,7 +931,7 @@ int RUDPStream::Receive(char * OutBuffer, uint32_t sizeOfBuffer)
 			{
 				// Include all 32 results of acknowledged bitfield received (using OR gate logic) in case of update...
 				localAcknowledgedBitfield.bitfield |= packet.AckBitfield().bitfield;
-				Logger::PrintErrorF(".... Redundant acknowledgement ignored: ack<%d>\n", packet.Ack());
+				Logger::PrintErrorF(__FILE__, ".... Redundant acknowledgement ignored: ack<%d>\n", packet.Ack());
 			}
 		}
 
@@ -951,7 +951,7 @@ int RUDPStream::Receive(char * OutBuffer, uint32_t sizeOfBuffer)
 		// DEBUG: For Debug Purposes Only
 		if (currentSequenceNumber >= mSequenceNumber + fragmentCount)
 		{
-			Logger::PrintF("Exit Condition: localAckBit=%s remoteAckBit=%s expected_remote<%d> current<%d>   expected_seq<%d> current<%d>\n"
+			Logger::PrintF(__FILE__, "Exit Condition: localAckBit=%s remoteAckBit=%s expected_remote<%d> current<%d>   expected_seq<%d> current<%d>\n"
 				, localAcknowledgedBitfield.IsAll(true) ? "true" : "false"
 				, remoteAcknowledgedBitfield.IsAll(true) ? "true" : "false"
 				, mRemoteSequenceNumber + fragmentCount
@@ -988,26 +988,26 @@ int RUDPStream::Receive(char * OutBuffer, uint32_t sizeOfBuffer)
 
 	if (totalBytesReceived > sizeOfBuffer)
 	{	// TODO: Handle this case better!
-		Logger::PrintF("==== Receive Failed. Bytes received waaay too large: max<%d> rcvd<%d>\n", sizeOfBuffer, totalBytesReceived);
+		Logger::PrintF(__FILE__, "==== Receive Failed. Bytes received waaay too large: max<%d> rcvd<%d>\n", sizeOfBuffer, totalBytesReceived);
 
-		Logger::PrintF("==== Final State [% 5lld us]: seq_num<%d> remote_seq_num<%d> msg_id<%d> max_time<%d> bytes_rcvd<%d>\n"
+		Logger::PrintF(__FILE__, "==== Final State [% 5lld us]: seq_num<%d> remote_seq_num<%d> msg_id<%d> max_time<%d> bytes_rcvd<%d>\n"
 			, currentTime(), mSequenceNumber, mRemoteSequenceNumber, mMessageId, mMaxConnectionTimeOut, totalBytesReceived);
 		return -1;
 	}
 	else if (totalBytesReceived <= 0)
 	{
-		Logger::PrintF("==== Receive Failed. Bytes received is bad: rcvd<%d>\n", totalBytesReceived);
+		Logger::PrintF(__FILE__, "==== Receive Failed. Bytes received is bad: rcvd<%d>\n", totalBytesReceived);
 
-		Logger::PrintF("==== Final State [% 5lld us]: seq_num<%d> remote_seq_num<%d> msg_id<%d> max_time<%d> bytes_rcvd<%d>\n"
+		Logger::PrintF(__FILE__, "==== Final State [% 5lld us]: seq_num<%d> remote_seq_num<%d> msg_id<%d> max_time<%d> bytes_rcvd<%d>\n"
 			, currentTime(), mSequenceNumber, mRemoteSequenceNumber, mMessageId, mMaxConnectionTimeOut, totalBytesReceived);
 
 		return -1;
 	}
 	else
 	{	// DEBUG: For Debugging Purposes only
-		Logger::PrintF("==== Successful Receiving\n");
+		Logger::PrintF(__FILE__, "==== Successful Receiving\n");
 
-		Logger::PrintF("==== Final State [% 5lld us]: seq_num<%d> remote_seq_num<%d> msg_id<%d> max_time<%d> bytes_rcvd<%d>\n"
+		Logger::PrintF(__FILE__, "==== Final State [% 5lld us]: seq_num<%d> remote_seq_num<%d> msg_id<%d> max_time<%d> bytes_rcvd<%d>\n"
 			, currentTime(), mSequenceNumber, mRemoteSequenceNumber, mMessageId, mMaxConnectionTimeOut, totalBytesReceived);
 	}
 
@@ -1033,7 +1033,7 @@ bool RUDPStream::Shutdown(int /*how*/)
 	result = shutdown(mSocket, how);
 	if (result == SOCKET_ERROR)
 	{
-		Logger::PrintF("shutdown failed with error: %d\n", WSAGetLastError());
+		Logger::PrintF(__FILE__, "shutdown failed with error: %d\n", WSAGetLastError());
 		return false;
 	}
 	else 

@@ -32,7 +32,7 @@ int __cdecl main()
 	{
 		return BP(0);
 	}
-	const char * server_ip = configLines[0].c_str();
+	const char * serverAddress = configLines[0].c_str();
 
 	// Re-seed
 	srand(static_cast<unsigned int>(time(0)));
@@ -44,27 +44,27 @@ int __cdecl main()
 		///RUDPStream server = RUDPClient::ConnectToServer(server_ip, DEFAULT_SERVER_PORT_NUMBER, DEFAULT_SERVER_PORT_NUMBER + 1000, 1500);
 		RUDPSocket server(DEFAULT_SERVER_PORT_NUMBER + 1000U, 1500);
 		
-		server.Connect(server_ip, DEFAULT_SERVER_PORT_NUMBER);
+		server.Connect(serverAddress, DEFAULT_SERVER_PORT_NUMBER);
 
 		if (server.IsOpen() == false)
 		{
-			Logger::PrintF("Failed to create server connection.");
+			Logger::PrintF(__FILE__, "Failed to create server connection.");
 			return BP(0);
 		}
 
 		// Notify that connection is reached
-		Logger::PrintF("Client-Server Connection Established.\n");
+		Logger::PrintF(__FILE__, "Client-Server Connection Established.\n");
 
 		do
 		{
 			// Send To Server
-			int bytesSent;
+			bool isSuccess;
 
 			///bytesSent = server.Send(TEST_MESSAGE);
-			bytesSent = server.Send(TEST_MESSAGE.c_str(), TEST_MESSAGE.length());
-			if (bytesSent < 0)
+			isSuccess = server.Send(TEST_MESSAGE.c_str(), static_cast<uint32_t>(TEST_MESSAGE.length()));
+			if (isSuccess)
 			{
-				Logger::PrintF("Failed to send datagram\n");
+				Logger::PrintF(__FILE__, "Failed to send datagram\n");
 				//return BP(1);
 			}
 
@@ -74,7 +74,7 @@ int __cdecl main()
 	}
 	catch (SocketException ex)
 	{
-		Logger::PrintError(ex.what());
+		Logger::PrintError(__FILE__, ex.what());
 		return BP(0);
 	}
 }

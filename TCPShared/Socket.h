@@ -16,7 +16,7 @@ public:
 	/**
 	*   Close and deallocate this socket
 	*/
-	~Socket();
+	virtual ~Socket();
 	virtual void Close();
 	bool IsOpen();
 
@@ -115,6 +115,9 @@ protected:
 
 class IServerSocket
 {
+public:
+	virtual ~IServerSocket() {}
+
 	virtual Socket* Accept() = 0;
 	virtual uint16_t GetListeningPort() = 0;
 };

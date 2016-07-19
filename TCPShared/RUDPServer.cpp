@@ -70,7 +70,7 @@ RUDPStream * RUDPServer::Accept()
 	++mAvailablePort;
 	for (MAX_PORT_CHECK = mAvailablePort + 9, isSuccess = false; !isSuccess && mAvailablePort <= MAX_PORT_CHECK; ++mAvailablePort)
 	{
-		Logger::PrintF("Testing port %d ... ", mAvailablePort);
+		Logger::PrintF(__FILE__, "Testing port %d ... ", mAvailablePort);
 		try
 		{
 			clientSocket = make_shared<UDPSocket>(mAvailablePort);
@@ -82,12 +82,12 @@ RUDPStream * RUDPServer::Accept()
 
 	if (mAvailablePort > MAX_PORT_CHECK)
 	{
-		Logger::PrintF("failed to open new port for incoming client\n");
+		Logger::PrintF(__FILE__, "failed to open new port for incoming client\n");
 		return nullptr;
 	}
 	else
 	{
-		Logger::PrintF("Port Available: %d\n", mAvailablePort);
+		Logger::PrintF(__FILE__, "Port Available: %d\n", mAvailablePort);
 	}
 
 	*/
@@ -119,13 +119,13 @@ RUDPStream * RUDPServer::Accept()
 
 				if (!isSuccess)
 				{	// Packet is not an RUDP Packet
-					Logger::PrintF("Received non-RUDP Packet on Listening Port %d: id<%X>\n", mListenSocket->GetLocalPort(), data.Id());
+					Logger::PrintF(__FILE__, "Received non-RUDP Packet on Listening Port %d: id<%X>\n", mListenSocket->GetLocalPort(), data.Id());
 				}
 			}
 		}
 		else
 		{
-			Logger::PrintF("Ignore listen\n");
+			Logger::PrintF(__FILE__, "Ignore listen\n");
 			isSuccess = false;
 		}
 
@@ -151,10 +151,10 @@ RUDPStream * RUDPServer::Accept()
 			// Check if Client has been Acknowledged before (ignore message if that's the case)
 			if (index >= mAcknowledgeTable.size())
 			{	// New Client Requesting Connection!
-				Logger::PrintF("New Client found! ip<%s> port<%d>\n", clientAddress.c_str(), clientPort);
+				Logger::PrintF(__FILE__, "New Client found! ip<%s> port<%d>\n", clientAddress.c_str(), clientPort);
 				isClientFound = true;
 
-				Logger::PrintF("Establishing Connection: Received seq <%d> ack<%d>\n", data.Sequence(), data.Ack());
+				Logger::PrintF(__FILE__, "Establishing Connection: Received seq <%d> ack<%d>\n", data.Sequence(), data.Ack());
 
 				// Create RPacket to send...
 				seqNum = rand();
@@ -171,11 +171,11 @@ RUDPStream * RUDPServer::Accept()
 				}
 				catch (SocketException ex)
 				{
-					Logger::PrintF("sendto failed with error: %s\n", ex.what());
+					Logger::PrintF(__FILE__, "sendto failed with error: %s\n", ex.what());
 				}
 
 				// Store acknowledgement information in table
-				Logger::PrintF("Establishing Connection: Sending  seq <%d> ack<%d>\n", seqNum, ackNum);
+				Logger::PrintF(__FILE__, "Establishing Connection: Sending  seq <%d> ack<%d>\n", seqNum, ackNum);
 				mAcknowledgeTable.emplace_back(PendingClientsT(clientSocket, clientAddress, clientPort, seqNum, ackNum, std::chrono::high_resolution_clock::now()));
 			}
 		}
@@ -203,7 +203,7 @@ RUDPStream * RUDPServer::Accept()
 
 					if (!isSuccess)
 					{	// Packet is not an RUDP Packet
-						Logger::PrintF("Received non-RUDP Packet on Port %d: id<%X>\n", client.socket->GetLocalPort(), data.Id());
+						Logger::PrintF(__FILE__, "Received non-RUDP Packet on Port %d: id<%X>\n", client.socket->GetLocalPort(), data.Id());
 					}
 				}
 
@@ -213,7 +213,7 @@ RUDPStream * RUDPServer::Accept()
 					// Check if Acknowledgement is correct
 					if (data.Ack() == client.seqNumSent + 1U)
 					{	// Successful Acknowledgement from Client!
-						Logger::PrintF("Acknowledged Connection: Received seq <%d> ack<%d>\n", data.Sequence(), data.Ack());
+						Logger::PrintF(__FILE__, "Acknowledged Connection: Received seq <%d> ack<%d>\n", data.Sequence(), data.Ack());
 
 						// Create RUDP Stream
 						RUDPStream * newClientStream = new RUDPStream(client.socket, client.address, client.port, client.seqNumSent + 1, client.ackNumRecvd + 1, mMaxConnectionTimeOut);
@@ -222,7 +222,7 @@ RUDPStream * RUDPServer::Accept()
 						removeIndices.push_back(index);
 
 						// Connection Established
-						Logger::PrintF("Connection Established!\n");
+						Logger::PrintF(__FILE__, "Connection Established!\n");
 
 						// Add to the list of Clients
 						mClients.push_back(newClientStream);
@@ -232,12 +232,12 @@ RUDPStream * RUDPServer::Accept()
 					}
 					else
 					{	// Client has a bad acknowledgent number
-						Logger::PrintF("Received Bad Acknowledgement Number: seq<%d> ack<%d>\n", data.Sequence(), data.Ack());
+						Logger::PrintF(__FILE__, "Received Bad Acknowledgement Number: seq<%d> ack<%d>\n", data.Sequence(), data.Ack());
 					}
 				}
 				else
 				{	// Connection timed-out for this acknowledgement
-					Logger::PrintF("Connection Timed-Out for Client %s:%d\n", client.address.c_str(), client.port);
+					Logger::PrintF(__FILE__, "Connection Timed-Out for Client %s:%d\n", client.address.c_str(), client.port);
 
 					// Remove from Acknowledged Clients Table
 					removeIndices.push_back(index);

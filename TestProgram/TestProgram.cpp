@@ -22,6 +22,8 @@
 #include <iostream>          // For cout and cerr
 #include <cstdlib>           // For atoi()
 
+#include "ConfigReader.h"
+
 const int ECHOMAX = 255;     // Longest string to echo
 
 int server_main(int argc, char *argv[])
@@ -136,11 +138,14 @@ int client_main(int argc, char *argv[])
 }
 
 
-
-
+#include "SocketException.h"
 
 int main(int argc, char *argv[])
 {
+	(argc);
+	(argv);
+	throw SocketException("Message!");
+	/*
 	if (argc == 2)
 	{
 		server_main(argc, argv);
@@ -148,5 +153,16 @@ int main(int argc, char *argv[])
 	else
 	{
 		client_main(argc, argv);
-	}
+	}*/
 }
+	
+/*	Parsing Code:
+
+	std::vector<std::string> lines = ConfigReader::ReadFile("../Content/config.txt");
+	
+	assert(lines.size() % 3 == 0);
+	for (int num = 0; num < (int)lines.size(); num += 3)
+	{
+		printf("WSACODE(%s\t,\"%s\",\"%s\")\n", lines[num].c_str(), lines[num + 1].c_str(), lines[num + 2].c_str());
+	}
+*/

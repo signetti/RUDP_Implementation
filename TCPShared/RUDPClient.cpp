@@ -50,14 +50,14 @@ RUDPStream RUDPClient::ConnectToServer(const char * ip, unsigned short port, uns
 		}
 		catch (SocketException ex)
 		{
-			Logger::PrintF("sendto failed with error: %s\n", ex.what());
+			Logger::PrintF(__FILE__, "sendto failed with error: %s\n", ex.what());
 			return RUDPStream::InvalidStream();
 		}
 
 		// Begin Timing (Record Time it was Sent)
 		std::chrono::high_resolution_clock::time_point timeSentToServer = std::chrono::high_resolution_clock::now();
-		Logger::PrintF("Sending to Server: ip<%s> port<%d>\n", serverAddress.c_str(), serverPort);
-		Logger::PrintF("Establishing Connection: Sending seq <%d> ack<%d>\n", seqNum, 0);
+		Logger::PrintF(__FILE__, "Sending to Server: ip<%s> port<%d>\n", serverAddress.c_str(), serverPort);
+		Logger::PrintF(__FILE__, "Establishing Connection: Sending seq <%d> ack<%d>\n", seqNum, 0);
 
 		for (;;)
 		{
@@ -72,7 +72,7 @@ RUDPStream RUDPClient::ConnectToServer(const char * ip, unsigned short port, uns
 				// Check if packet's address is from server
 				if (serverAddress != fromAddress)
 				{	// Packet is not from the server, ignore...
-					Logger::PrintF("RUDP Packet is not from Server: expected<%s> actual<%s>\n", serverAddress.c_str(), fromAddress.c_str());
+					Logger::PrintF(__FILE__, "RUDP Packet is not from Server: expected<%s> actual<%s>\n", serverAddress.c_str(), fromAddress.c_str());
 					continue;
 				}
 
@@ -82,19 +82,19 @@ RUDPStream RUDPClient::ConnectToServer(const char * ip, unsigned short port, uns
 				// Check if Packet is RUDP Packet
 				if (!isSuccess)
 				{	// Packet is not an RUDP Packet, ignore...
-					Logger::PrintF("Packet is not an RUDP Packet\n");
+					Logger::PrintF(__FILE__, "Packet is not an RUDP Packet\n");
 					continue;
 				}
 
 				// Packet is an RUDP Packet from Server, accept Packet!
-				Logger::PrintF("Server Message Received: ip<%s> port<%d>\n", fromAddress.c_str(), fromPort);
+				Logger::PrintF(__FILE__, "Server Message Received: ip<%s> port<%d>\n", fromAddress.c_str(), fromPort);
 				break;
 			}
 			else
 			{
-				Logger::PrintF("recvfrom produced error: %ld\n", WSAGetLastError());
+				Logger::PrintF(__FILE__, "recvfrom produced error: %ld\n", WSAGetLastError());
 				// Establishing connection timed-out. Return unsuccessful.
-				Logger::PrintF("Establishing Connection Timed Out.\n");
+				Logger::PrintF(__FILE__, "Establishing Connection Timed Out.\n");
 				return RUDPStream::InvalidStream();
 			}
 		}
@@ -102,12 +102,12 @@ RUDPStream RUDPClient::ConnectToServer(const char * ip, unsigned short port, uns
 		// Check if Acknowledge Number is your Sequence Number
 		if (data.Ack() != seqNum + 1)
 		{	// Bad Acknowledgement number, send again!
-			Logger::PrintF("Bad Acknowledgement number: expected<%d> actual<%d>\n", seqNum + 1, data.Ack());
+			Logger::PrintF(__FILE__, "Bad Acknowledgement number: expected<%d> actual<%d>\n", seqNum + 1, data.Ack());
 			continue;
 		}
 
 		// Acknowledgement Successful!
-		Logger::PrintF("Acknowledged Connection: Received seq <%d> ack<%d>\n", data.Sequence(), data.Ack());
+		Logger::PrintF(__FILE__, "Acknowledged Connection: Received seq <%d> ack<%d>\n", data.Sequence(), data.Ack());
 		break;
 	}
 
@@ -124,13 +124,13 @@ RUDPStream RUDPClient::ConnectToServer(const char * ip, unsigned short port, uns
 	}
 	catch (SocketException ex)
 	{
-		Logger::PrintF("sendto failed with error: %s\n", ex.what());
+		Logger::PrintF(__FILE__, "sendto failed with error: %s\n", ex.what());
 		return RUDPStream::InvalidStream();
 	}
 
 
 	// At this point the connection is established
-	Logger::PrintF("Acknowledging Connection: Sending  seq <%d> ack<%d>\n", seqNum, ackNum);
+	Logger::PrintF(__FILE__, "Acknowledging Connection: Sending  seq <%d> ack<%d>\n", seqNum, ackNum);
 
 	// Next message that will be sent should be one sequence number higher
 	seqNum += 1;

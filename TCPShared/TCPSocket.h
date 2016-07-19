@@ -55,6 +55,9 @@ private:
 */
 class TCPServerSocket : private TCPSocket, public IServerSocket
 {
+private:
+	std::vector<std::shared_ptr<TCPSocket>> mClients;
+
 public:
 	/**
 	*   Construct a TCP socket for use with a server, accepting connections
@@ -66,7 +69,7 @@ public:
 	*   @exception SocketException thrown if unable to create TCP server socket
 	*/
 	explicit TCPServerSocket(uint16_t listenPort, uint32_t queueLen = 5);
-
+	~TCPServerSocket() override;
 	/**
 	*   Construct a TCP socket for use with a server, accepting connections
 	*   on the specified port on the interface specified by the given address

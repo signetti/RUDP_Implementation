@@ -13,6 +13,7 @@ Socket::Socket(int type, int protocol)
 	// Make a new socket
 	if ((mSocket = socket(PF_INET, type, protocol)) < 0)
 	{
+		WSAManager::StoreLastErrorCode();
 		throw SocketException("Socket creation failed (socket())", true);
 	}
 }
@@ -30,11 +31,15 @@ Socket::~Socket()
 
 void Socket::Close()
 {
+	if (mSocket != INVALID_SOCKET)
+	{
 #ifdef WIN32
-	closesocket(mSocket);
+		closesocket(mSocket);
+		WSAManager::StoreLastErrorCode();
 #else
-	close(sockDesc);
+		close(sockDesc);
 #endif
+	}
 	mSocket = SOCKET(INVALID_SOCKET);
 }
 
@@ -78,6 +83,7 @@ unsigned short Socket::GetLocalPort()
 
 	if (getsockname(mSocket, (sockaddr *)&addr, (socklen_t *)&addr_len) < 0)
 	{
+		WSAManager::StoreLastErrorCode();
 		throw SocketException("Fetch of local port failed (getsockname())", true);
 	}
 	return ntohs(addr.sin_port);
@@ -92,7 +98,9 @@ void Socket::SetLocalPort(uint16_t port)
 	localAddr.sin_addr.s_addr = htonl(INADDR_ANY);
 	localAddr.sin_port = htons(port);
 
-	int result = ::bind(mSocket, (sockaddr *)&localAddr, sizeof(sockaddr_in));
+	int result = bind(mSocket, (sockaddr *)&localAddr, sizeof(sockaddr_in));
+	WSAManager::StoreLastErrorCode();
+
 	if (result < 0)
 	{
 		throw SocketException("Set of local port failed (bind())", true);
@@ -103,7 +111,10 @@ uint16_t Socket::ResolveService(const std::string& service, const std::string &p
 {
 	struct servent *serv;        /* Structure containing service information */
 
-	if ((serv = getservbyname(service.c_str(), protocol.c_str())) == NULL)
+	serv = getservbyname(service.c_str(), protocol.c_str());
+	WSAManager::StoreLastErrorCode();
+
+	if (serv == NULL)
 		return (unsigned short)atoi(service.c_str());  /* Service is port number */
 	else
 		return ntohs(serv->s_port);    /* Found port (network byte order) by name */
@@ -125,7 +136,10 @@ std::string Socket::GetRemoteAddress()
 	sockaddr_in addr;
 	socklen_t addr_len = sizeof(addr);
 
-	if (getpeername(mSocket, (sockaddr *)&addr, &addr_len) < 0)
+	int result = getpeername(mSocket, (sockaddr *)&addr, &addr_len);
+	WSAManager::StoreLastErrorCode();
+
+	if (result < 0)
 	{
 		throw SocketException("Fetch of foreign address failed (getpeername())", true);
 	}
@@ -137,8 +151,12 @@ uint16_t Socket::GetRemotePort()
 	sockaddr_in addr;
 	socklen_t addr_len = sizeof(addr);
 
-	if (getpeername(mSocket, (sockaddr *)&addr, &addr_len) < 0)
+	int result = getpeername(mSocket, (sockaddr *)&addr, &addr_len);
+	WSAManager::StoreLastErrorCode();
+
+	if (result < 0)
 	{
+		WSAManager::StoreLastErrorCode();
 		throw SocketException("Fetch of foreign port failed (getpeername())", true);
 	}
 	return ntohs(addr.sin_port);
@@ -158,7 +176,11 @@ void Socket::FillAddr(const std::string& address, uint16_t port, sockaddr_in &Ou
 	OutAddr.sin_family = AF_INET;       // Internet address
 
 	hostent *host;  // Resolve name
-	if ((host = gethostbyname(address.c_str())) == NULL)
+
+	host = gethostbyname(address.c_str());
+	WSAManager::StoreLastErrorCode();
+
+	if (host == NULL)
 	{
 		// strerror() will not work for gethostbyname() and hstrerror() 
 		// is supposedly obsolete
@@ -188,7 +210,7 @@ void Socket::FillAddr(const std::string& address, uint16_t port, sockaddr_in &ad
 	result = getaddrinfo(address.c_str(), portBuf, &hints, &info);
 	if (result != 0)
 	{
-		Logger::PrintF("getaddrinfo failed with error: %d\n", result);
+		Logger::PrintF(__FILE__, "getaddrinfo failed with error: %d\n", result);
 		// strerror() will not work for gethostbyname() and hstrerror() 
 		// is supposedly obsolete
 		throw SocketException("Failed to resolve name (getaddrinfo())");

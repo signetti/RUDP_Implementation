@@ -86,9 +86,6 @@
     <ClInclude Include="CommunicatingSocket.h">
       <Filter>Socket</Filter>
     </ClInclude>
-    <ClInclude Include="Logger.h">
-      <Filter>Preprocessor</Filter>
-    </ClInclude>
     <ClInclude Include="ImmediateFunctionCall.h">
       <Filter>Utils</Filter>
     </ClInclude>
@@ -97,6 +94,9 @@
     </ClInclude>
     <ClInclude Include="CircularQueue.h">
       <Filter>Preprocessor</Filter>
+    </ClInclude>
+    <ClInclude Include="Logger.h">
+      <Filter>Utils</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -148,10 +148,12 @@
     <ClCompile Include="TCPSocket.cpp">
       <Filter>Socket</Filter>
     </ClCompile>
-    <ClCompile Include="Logger.cpp" />
     <ClCompile Include="RPacket.cpp">
       <Filter>RUDP\Helper</Filter>
     </ClCompile>
     <ClCompile Include="CircularQueue.cpp" />
+    <ClCompile Include="Logger.cpp">
+      <Filter>Utils</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

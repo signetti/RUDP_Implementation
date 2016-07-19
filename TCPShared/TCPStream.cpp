@@ -1,4 +1,5 @@
 #include "stdafx.h"
+#include "Logger.h"
 
 TCPStream::TCPStream(SOCKET socket) : mSocket(socket) {}
 
@@ -38,7 +39,7 @@ int TCPStream::Send(const char * data, int sizeOfData)
 	result = send(mSocket, data, sizeOfData, 0);
 	if (result == SOCKET_ERROR)
 	{
-		printf("send failed with error: %d\n", WSAGetLastError());
+		Logger::PrintF(__FILE__, "send failed with error: %d\n", WSAGetLastError());
 		return -1;
 	}
 
@@ -64,7 +65,7 @@ int TCPStream::Receive(char * OutBuffer, int sizeOfBuffer)
 	result = recv(mSocket, OutBuffer, sizeOfBuffer, 0);
 	if (result == SOCKET_ERROR)
 	{
-		printf("recv failed with error: %d\n", WSAGetLastError());
+		Logger::PrintF(__FILE__, "recv failed with error: %d\n", WSAGetLastError());
 	}
 	return result;
 }
@@ -77,7 +78,7 @@ bool TCPStream::Shutdown(int how)
 	result = shutdown(mSocket, how);
 	if (result == SOCKET_ERROR)
 	{
-		printf("shutdown failed with error: %d\n", WSAGetLastError());
+		Logger::PrintF(__FILE__, "shutdown failed with error: %d\n", WSAGetLastError());
 		return false;
 	}
 	else return true;

@@ -1,5 +1,7 @@
 #pragma once
 #include <string>
+#include "ConfigReader.h"
+#include "Logger.h"
 
 // Message to test on submission
 static const std::string TEST_MESSAGE_SMALL = "\
@@ -8,6 +10,7 @@ static const std::string TEST_MESSAGE_SMALL = "\
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~|\
 --------------------------------------------------------------!\
 ";
+
 /*
 static const std::string TEST_MESSAGE = 
 "|Lorem ipsum dolor sit amet, consectetur adipiscing elit. Phasellus \
@@ -31,8 +34,8 @@ inceptos himenaeos. Curabitur gravida purus non congue laoreet. Ut \
 rhoncus maximus lectus, ac venenatis urna pretium non.Sed luctus \
 pellentesque purus vel ornare.Mauris elit metus, lacinia vel sem vel, \
 porttitor interdum ipsum.Sed sit amet ante nec ipsum ultricies \
-tristique vitae quis neque.Aenean felis enim, facilisis et sem amet.|";*/
-
+tristique vitae quis neque.Aenean felis enim, facilisis et sem amet.|";
+*/
 
 static const std::string TEST_MESSAGE =
 "|Lorem ipsum dolor sit amet, consectetur adipiscing elit. Phasellus \
@@ -198,17 +201,6 @@ faucibus ligula interdum eu.Aliquam vel venenatis justo, vitae fringilla \
 enim.Nunc cursus dictum nulla non molestie.Etiam sit amet mattis lorem, \
 id sodales ex.Sed at tellus porttitor volutpat.|";
 
-// Validates the test message received with the test message in the system
-bool ValidateMessageReceived(const std::string& test, char * message, int size)
-{
-	bool isDataValid;
-
-	// Check Validity of Data received
-	isDataValid = static_cast<int>(test.length() + 1) == size;
-	isDataValid = isDataValid && (test.compare(message) == 0);
-	return isDataValid;
-}
-
 /*
 // Check Sums
 std::int32_t GetCheckSum(const std::string& message)
@@ -248,29 +240,117 @@ std::uint32_t RoundUpToPowerOfTwo(std::uint32_t number)
 // Default Test Information
 static const std::uint32_t NUM_OF_TEST_RUNS = 100;
 
-static const std::uint32_t DEFAULT_BUFLEN = 1200;//RoundUpToPowerOfTwo(TEST_MESSAGE.length() + 20);
+static const std::uint32_t DEFAULT_BUFLEN = 1200;
 
-static uint32_t const DEFAULT_SERVER_PORT_NUMBER = 27015;
-static char * const DEFAULT_SERVER_PORT = "27015";
-static char * const DEFAULT_CLIENT_PORT = "27016";
-//static char * const DEFAULT_IP = "10.8.3.35";
-//static char * const DEFAULT_IP = "127.0.0.1";
-//static char * const DEFAULT_IP = "192.168.0.4";
+static uint16_t const DEFAULT_SERVER_PORT_NUMBER = 27015;
+static uint16_t const DEFAULT_CLIENT_PORT_NUMBER = 28015;
 
-//static unsigned short const RELIABLE_UDP_ID = 0xABCD;
+static char * const CONFIG_FILE_PATH = "../Content/config.txt";
 
-/*
-#include "Logger.h"
-int GetError(SOCKET sock)
+enum class EProtocol
 {
-	int error = 0;
-	socklen_t len = sizeof(error);
-	int retval = getsockopt(sock, SOL_SOCKET, SO_ERROR, reinterpret_cast<char*>(&error), &len);
+	TCP,
+	UDP,
+	RUDP
+};
 
-	if (retval != 0)
+struct config_t
+{
+	std::string serverAddress;
+	std::string message;
+	uint32_t maxTimeoutMS;
+	EProtocol protocol;
+	bool isSendOnSuccess;
+};
+
+bool ParseConfig(config_t& OutResults)
+{
+	static const uint32_t NUM_OF_ARGS = 5;
+	bool isFirstTime = true;
+
+	for (;;)
 	{
-		// there was a problem getting the error code
-		Logger::PrintF("Error getting socket, error code: %d\n", WSAGetLastError());
+		if (!isFirstTime)
+		{
+			Logger::PrintScreen("Press \'q\' to quit, any other key to try again...");
+			if (getchar() == 'q')
+			{
+				return false;
+			}
+		}
+		else isFirstTime = false;
+
+		// Read Config Files
+		std::vector<std::string> configLines = ConfigReader::ReadFile(CONFIG_FILE_PATH);
+		if (configLines.size() < NUM_OF_ARGS)
+		{
+			if (!configLines.empty())
+			{	// File Exists, but bad argument count
+				Logger::PrintErrorF(__FILE__, "Invalid Config File Argument count. Should have at least %d lines as follows:\n"\
+					"\t 1.  Server IP Address \n"\
+					"\t 2.  Protocol Type (TCP/UDP/RUDP) \n"\
+					"\t 3.  Maximum Connection Timeout (in ms) \n"\
+					"\t 4.  Is Send Complete on Success? (true/false) \n"\
+					"\t 5+. Message to Send... \n", NUM_OF_ARGS);
+			}
+			continue;
+		}
+		int lineNumber = 0;
+
+		// Parse First Line
+		OutResults.serverAddress = configLines[lineNumber];
+		++lineNumber;
+
+		// Parse Second Line
+		if (_stricmp("TCP", configLines[lineNumber].c_str()) == 0)
+		{
+			OutResults.protocol = EProtocol::TCP;
+		}
+		else if (_stricmp("UDP", configLines[lineNumber].c_str()) == 0)
+		{
+			OutResults.protocol = EProtocol::UDP;
+		}
+		else if (_stricmp("RUDP", configLines[lineNumber].c_str()) == 0)
+		{
+			OutResults.protocol = EProtocol::RUDP;
+		}
+		else
+		{
+			Logger::PrintErrorF(__FILE__, "Error on second line: \"%s\" does not equal TCP/UDP/RUDP\n", configLines[1].c_str());
+			continue;
+		}
+		++lineNumber;
+
+		// Parse Third Line
+		OutResults.maxTimeoutMS = atoi(configLines[lineNumber].c_str());
+		if (atoi == 0U)
+		{
+			Logger::PrintErrorF(__FILE__, "Error on third line: \"%s\" is not a valid number\n", configLines[1].c_str());
+			return false;
+		}
+		++lineNumber;
+
+		// Parse Fourth Line
+		OutResults.isSendOnSuccess = (_stricmp("true", configLines[lineNumber].c_str()) == 0);
+		if (OutResults.isSendOnSuccess == false && _stricmp("false", configLines[lineNumber].c_str()) != 0)
+		{
+			Logger::PrintErrorF(__FILE__, "Error on third line: \"%s\" does not equal true/false\n", configLines[lineNumber].c_str());
+			continue;
+		}
+		++lineNumber;
+
+		// Parse Remaining Lines as the message
+
+		std::stringstream message_stream;
+		uint32_t i;
+		for (i = lineNumber; i < configLines.size() - 1; ++i)
+		{
+			message_stream << configLines[i] << '\n';
+		}
+		message_stream << configLines[configLines.size() - 1];
+		OutResults.message = message_stream.str();
+
+		// Return success!
+		return true;
 	}
-	return retval;
-}*/
+}

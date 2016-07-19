@@ -2,26 +2,45 @@
 #include "SocketException.h"
 
 // SocketException Code
-SocketException::SocketException(const std::string &message, bool inclSysMsg) //throw()
-	: userMessage(message)
+SocketException::SocketException(const std::string &message, bool isIncludingWSAErrorMessage, bool isIncludingSystemMessage)
+	: mErrorMessage(), mWSAError((uint16_t)WSAGetLastError())
 {
-	if (inclSysMsg)
-	{
-		userMessage.append(": ");
+	{	// Create the Error Message that this resulted in...
+		std::stringstream message_stream;
+		message_stream << message;
+
+		if (isIncludingWSAErrorMessage)
+		{	// Print WSA Error Message
+			auto& wsa_error = WSAManager::GetLastError();
+
+			message_stream << "\n\nWSA_Error: #" << wsa_error.Code() << " - " << wsa_error.CodeName() << '\n';
+			message_stream << wsa_error.QuickDescription() << '\n';
+			message_stream << wsa_error.Description();
+		}
+
+		if(isIncludingSystemMessage)
+		{	// Print System Error Message
+			message_stream << "\n\n";
 #ifdef WIN32
-		char error[100];
-		strerror_s(error, errno);
-		userMessage.append(error);
+			char buffer[100];
+			strerror_s(buffer, errno);
+			message_stream << buffer;
 #else
-		userMessage.append(strerror(errno));
+			message_stream << strerror(errno);
 #endif
+		}
+
+		// Store the Error message
+		mErrorMessage = message_stream.str();
 	}
+
+	// Print the Error Message
+	Logger::PrintError(__FILE__, mErrorMessage);
 }
 
-SocketException::~SocketException() //throw()
-{}
+SocketException::~SocketException() {}
 
-const char *SocketException::what() const //throw()
+const char *SocketException::what() const
 {
-	return userMessage.c_str();
+	return mErrorMessage.c_str();
 }
