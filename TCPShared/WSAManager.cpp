@@ -9,14 +9,14 @@ const WSAManager WSAManager::_instance;
 static_assert("WSACODE is already defined.");
 #endif
 
-#define WSACODE(Code, QuickDescription, Description)	std::pair<uint16_t, WSAErrorCode>((uint32_t)Code, WSAErrorCode((uint32_t)Code, #Code, QuickDescription, Description)),
+#define WSACODE(Code, QuickDescription, Description)	std::pair<uint16_t, WSAErrorCodeInfo>((uint32_t)Code, WSAErrorCodeInfo((uint32_t)Code, #Code, QuickDescription, Description)),
 
 
-const WSAErrorCode WSAManager::WSA_NO_ERROR(0, "WSA_NO_ERROR", "No WSA Error Found.", "No error was produced.");
+const WSAErrorCodeInfo WSAManager::WSA_NO_ERROR(0, "WSA_NO_ERROR", "No WSA Error Found.", "No error was produced.");
 uint16_t WSAManager::sWSAErrorCode;
 
 #ifdef WIN32
-const std::map<uint16_t, WSAErrorCode> WSAManager::sWSAErrorCodeMap = {
+const std::map<uint16_t, WSAErrorCodeInfo> WSAManager::sWSAErrorCodeMap = {
 WSACODE(WSA_INVALID_HANDLE			,"Specified event object handle is invalid.", "An application attempts to use an event object, but the specified handle is not valid. Note that this error is returned by the operating system, so the error number may change in future releases of Windows.")
 WSACODE(WSA_NOT_ENOUGH_MEMORY		,"Insufficient memory available.","An application used a Windows Sockets function that directly maps to a Windows function.The Windows function is indicating a lack of required memory resources.Note that this error is returned by the operating system, so the error number may change in future releases of Windows.")
 WSACODE(WSA_INVALID_HANDLE			,"Specified event object handle is invalid.","An application attempts to use an event object, but the specified handle is not valid.Note that this error is returned by the operating system, so the error number may change in future releases of Windows.")
@@ -140,14 +140,7 @@ WSAManager::~WSAManager()
 #endif
 }
 
-void WSAManager::StartUp() 
-{
-	// This calling function is to simply assert that the WSAManager is being initialized.
-	// Without calling this or one of the other static functions, the static instance will not be compiled in,
-	// and therefore will not have its constructor called to make the WSAStartUp() call.
-}
-
-const WSAErrorCode & WSAManager::GetLastError()
+const WSAErrorCodeInfo & WSAManager::GetLastError()
 {
 #ifdef WIN32
 	auto found = sWSAErrorCodeMap.find(sWSAErrorCode);
@@ -161,7 +154,7 @@ const WSAErrorCode & WSAManager::GetLastError()
 
 void WSAManager::StoreLastErrorCode(int wsaError)
 {
-	sWSAErrorCode = (uint16_t)wsaError;//(uint16_t)WSAGetLastError();
+	sWSAErrorCode = (uint16_t)wsaError;
 }
 
 uint16_t WSAManager::GetLastErrorCode()

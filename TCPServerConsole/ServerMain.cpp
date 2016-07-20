@@ -22,9 +22,9 @@ int BP(int condition)
 
 int __cdecl main()
 {
-// ========================== Parse Config File =========================
+	// ========================== Parse Config File =========================
 	config_t config;
-	if (!ParseConfig(config))
+	if (!ConfigReader::ParseConfig(config, CONFIG_FILE_PATH))
 	{
 		return BP(0);
 	}
@@ -33,10 +33,6 @@ int __cdecl main()
 	{
 		// ============== Initialize Server Connection ==============
 		// Create a server that is listening to the defined-port
-		///TCPServer server(DEFAULT_SERVER_PORT);
-		//TCPServerSocket server((uint16_t)atoi(DEFAULT_SERVER_PORT));
-		//RUDPServerSocket server(DEFAULT_SERVER_PORT_NUMBER, 1500);
-
 		std::shared_ptr<IServerSocket> server;
 
 		switch (config.protocol)
@@ -54,13 +50,9 @@ int __cdecl main()
 
 
 		// Open the server for connection (create socket, bind, then listen)
-		///success = server.Open();
-		///if (!success) return BP(1);
 
 		// Listen for and accept a client connection
 		Logger::PrintF(__FILE__, "Awaiting Client. . . ");
-		///TCPStream client = server.Accept();
-		//TCPSocket& client = *(server.Accept());
 		Socket * client = server->Accept();
 
 		// Notify that connection is reached
@@ -78,7 +70,6 @@ int __cdecl main()
 		do
 		{
 			// Send this application's Test Message to Client
-			///client.Send(TEST_MESSAGE_SMALL.c_str());
 			client->Send(config.message.c_str(), static_cast<uint32_t>(config.message.length() + 1U));
 
 			// Get client's Test Message
@@ -178,12 +169,6 @@ int __cdecl main()
 
 		// ================= End Test On Server-Side ===============
 		Logger::PrintF(__FILE__, "\nTest Complete.\n");
-
-		// Shutdown the connection since we're done
-		///success = client.Shutdown(SD_SEND);
-		///if (!success) return BP(0);
-
-		// Close and Clean Up WinSockAPI
 		client->Close();
 	}
 

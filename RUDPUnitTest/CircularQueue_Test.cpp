@@ -1,7 +1,7 @@
 #include "stdafx.h"
 #include "CppUnitTest.h"
 
-#include "RUDPStream.h"
+#include "RUDPSocket.h"
 
 #pragma warning (disable:4075)
 

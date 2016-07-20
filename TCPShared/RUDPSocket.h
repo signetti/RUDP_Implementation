@@ -3,12 +3,11 @@
 #include "UDPSocket.h"
 #include "CircularQueue.h"
 #include "RPacket.h"
+#include "ImmediateFunctionCall.h"
 
 class RPacket;
 
-/**
-*   RUDP socket class
-*/
+/*	C++ class representation for an RUDP Socket	*/
 class RUDPSocket : public UDPSocket
 {
 private:	/* Structures */
@@ -41,8 +40,6 @@ private:	/* Structures */
 
 	typedef CircularQueue<PacketFrame, RPacket::NumberOfAcksPerPacket> SlidingWindow;
 
-	friend class RUDPServerSocket;
-
 private:	/* Variables */
 
 	// The Maximum Transmission Unit of the average router
@@ -59,7 +56,6 @@ private:	/* Variables */
 	seq_num_t mSequenceNumber;
 	// The remote sequence number from the receiver
 	seq_num_t mRemoteSequenceNumber;
-
 	// The last message id assigned (synced between the two sides)
 	uint32_t mMessageId;
 
@@ -71,47 +67,46 @@ private:	/* Functions */
 	void MoveToNextMessage(uint32_t fragmentCount);
 
 public:
-
-	/**
-	*   Construct a UDP socket with the given local port
-	*   @param localPort local port
-	*   @exception SocketException thrown if unable to create UDP socket
+	/**	Construct a RUDP socket with no connection (must call Connect() first) binded to the given local port
+	*	@param		localPort			the port this socket will bind to
+	*	@param		maxTimeoutMS		the maximum time given to wait on data from the remote client (in milliseconds)
+	*   @exception	SocketException		thrown if unable to create an RUDP socket
 	*/
 	explicit RUDPSocket(uint16_t localPort, uint32_t maxTimeoutMS = 0U);
 
+	/**	Establishes a connection between the remote client and this client.
+	*	@param	remoteAddress			the remote client's address
+	*	@param	remotePort				the remote client's port
+	*	@exception	SocketException		thrown if unable to establish RUDP connection
+	*/
 	bool Connect(const std::string& remoteAddress, uint16_t remotePort) override;
 
-	/**
-	*   Send the given buffer as a UDP datagram to the
-	*   specified address/port
-	*   @param buffer buffer to be written
-	*   @param bufferLen number of bytes to write
-	*   @param foreignAddress address (IP address or name) to send to
-	*   @param foreignPort port number to send to
-	*   @return true if send is successful
-	*   @exception SocketException thrown if unable to send datagram
+	/**	Sends the buffer to the remote client.
+	*   @param	buffer					the buffer to send
+	*   @param	bufferLen				the size of the buffer given
+	*   @exception SocketException	thrown if unable to send data
 	*/
 	bool Send(const void* buffer, uint32_t bufferSize) override;
 
-	/**
-	*   Read read up to bufferLen bytes data from this socket.  The given buffer
-	*   is where the data will be placed
-	*   @param buffer buffer to receive data
-	*   @param bufferLen maximum number of bytes to receive
-	*   @param sourceAddress address of datagram source
-	*   @param sourcePort port of data source
-	*   @return number of bytes received and -1 for error
-	*   @exception SocketException thrown if unable to receive datagram
+
+	/**	Receives a message from the remote client and passes it into the buffer.
+	*   @param	buffer					the buffer for the received message to be stored
+	*   @param	bufferSize				the size of the buffer given
+	*   @exception SocketException		thrown if unable to send data
 	*/
 	uint32_t Receive(void* OutBuffer, uint32_t bufferSize) override;
 
 private:
+	// Grants access for RUDPServerSocket::Accept() connection creation
+	friend class RUDPServerSocket;
+
+	// This is not using UDP's SendTo and ReceiveFrom, so hide it
 	using UDPSocket::SendTo;
 	using UDPSocket::ReceiveFrom;
-	//bool SendTo(const void* buffer, uint32_t bufferSize, const std::string& remoteAddress, uint16_t remotePort) override;
-	//bool ReceiveFrom(void* OutBuffer, uint32_t& InOutBufferSize, std::string& OutRemoteAddress, uint16_t& OutRemotePort, uint32_t maxTimeoutMS = 0U) override;
 };
 
+
+/*	RUDP server socket class	*/
 class RUDPServerSocket : private UDPSocket, public IServerSocket
 {
 private:
@@ -124,8 +119,7 @@ private:
 		std::shared_ptr<RUDPSocket> socket;
 
 		PendingClientsT(std::shared_ptr<RUDPSocket> sock, const std::string& address, uint16_t port, uint32_t sequence, uint32_t acknowledgement)
-			: socket(sock), address(address), port(port), seqNumSent(sequence), ackNumRecvd(acknowledgement)
-		{}
+			: socket(sock), address(address), port(port), seqNumSent(sequence), ackNumRecvd(acknowledgement) {}
 	};
 
 private:
@@ -136,12 +130,26 @@ private:
 	// How long to wait for acknowledgement of connection
 	std::uint32_t mMaxConnectionTimeOut;
 
-	// List of clients that this server has accepted
+	// List of clients accepted by this server
 	std::vector<std::shared_ptr<RUDPSocket>> mClients;
 
 public:
-	explicit RUDPServerSocket(std::uint16_t listenPort, std::uint32_t maxConnectionTimeOut = 0U);
+	/**	Construct a TCP Server Socket, listening on the given port.
+	*   @param		localPort			the local port of this server socket. A value of zero will give a system-assigned unused port
+	*	@param		maxTimeoutMS		the maximum time given to wait on data from a remote client (in milliseconds)
+	*   @exception	SocketException		thrown if unable to create TCP server socket
+	*/
+	explicit RUDPServerSocket(std::uint16_t listenPort, std::uint32_t maxTimeoutMS = 0U);
 
+	/**	Blocks until a new connection is established on this socket (or an exception is thrown)
+	*   @return						a new and open RUDPSocket instance
+	*   @exception	SocketException	thrown if attempt to accept a new connection fails
+	*/
 	RUDPSocket* Accept() override;
+
+	/**	Retrieves the listening port number that this server is utilizing
+	*	@return		the listening port number*/
 	uint16_t GetListeningPort() override;
 };
+
+//LOGGER_FILE_STATE(RUDPSocket);

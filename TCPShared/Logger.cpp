@@ -1,6 +1,12 @@
 #include "stdafx.h"
 
 
+colored_string::colored_string(const char * message, BasicColor color) : std::string(message), mColor(color) {}
+colored_string::colored_string(const std::string & message, BasicColor color) : std::string(message), mColor(color) {}
+colored_string::colored_string(const colored_string & other) : std::string(other), mColor(other.mColor) {}
+colored_string::colored_string(colored_string && other) : std::string(std::move(other)), mColor(std::move(other.mColor)) {}
+
+
 std::ofstream Logger::sLogFile;
 const std::string Logger::DEFAULT_FILE_NAME = "rudp_log";
 const std::string Logger::DEFAULT_FILE_EXTENSION = "txt";
@@ -178,7 +184,10 @@ int Logger::PrintErrorF(const std::string& logDescriptor, const char * format, .
 	return state;
 }
 
-colored_string::colored_string(const char * message, BasicColor color) : std::string(message), mColor(color) {}
-colored_string::colored_string(const std::string & message, BasicColor color) : std::string(message), mColor(color) {}
-colored_string::colored_string(const colored_string & other) : std::string(other), mColor(other.mColor) {}
-colored_string::colored_string(colored_string && other) : std::string(std::move(other)), mColor(std::move(other.mColor)) {}
+
+void Logger::SetLoggerState(const std::string& logDescriptor, bool logToScreen, bool logToFile, BasicColor defaultColor)
+{
+	log_info_t logInfo(logToScreen, logToFile, defaultColor);
+	auto& mapping = sLogInfoMap.operator[](logDescriptor);
+	mapping = logInfo;
+}

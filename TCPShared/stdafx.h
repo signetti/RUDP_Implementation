@@ -26,9 +26,6 @@
 
 #include "Logger.h"
 #include "WSAManager.h"
-#include "TCPStream.h"
-#include "TCPClient.h"
-#include "TCPServer.h"
 
 // Need to link with Ws2_32.lib, Mswsock.lib, and Advapi32.lib
 #pragma comment (lib, "Ws2_32.lib")

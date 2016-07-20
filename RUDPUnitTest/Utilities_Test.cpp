@@ -2,7 +2,6 @@
 #include "CppUnitTest.h"
 
 //TODO: Removes warning LNK4075: ignoring "\INCREMENTAL" due to "\LTCG" specification
-#include "RUDPServer.h"
 
 #pragma warning (disable:4075)
 

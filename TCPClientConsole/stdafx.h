@@ -10,8 +10,5 @@
 #include <stdio.h>
 #include <tchar.h>
 
-#include "TCPStream.h"
-#include "TCPClient.h"
-
 
 // TODO: reference additional headers your program requires here

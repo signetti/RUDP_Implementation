@@ -1,7 +1,6 @@
 #include "stdafx.h"
 #include "SocketException.h"
 
-// SocketException Code
 SocketException::SocketException(const std::string &message, bool isIncludingWSAErrorMessage, bool isIncludingSystemMessage)
 	: mErrorMessage(), mWSAError((uint16_t)WSAGetLastError())
 {

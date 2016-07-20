@@ -2,138 +2,116 @@
 #include "Socket.h"
 #include <vector>
 #include <memory>
-/**
-*   UDP socket class
-*/
+
+/*	C++ class representation for a UDP Socket	*/
 class UDPSocket : public Socket
 {
 protected:
+	// The remote address
 	std::string mRemoteAddress;
 	uint16_t mRemotePort;
 	uint32_t mMaxTimeout;
 	bool bIsConnectionOriented;
 
 public:
-
-	/**
-	*   Construct a UDP socket
-	*   @exception SocketException thrown if unable to create UDP socket
+	/**	Construct a UDP socket
+	*	@param		maxTimeoutMS		the maximum time given to wait on data from a remote client (in milliseconds)
+	*   @exception	SocketException		thrown if unable to create an RUDP socket
 	*/
 	explicit UDPSocket(uint32_t maxTimeoutMS = 0U);
 
-	/**
-	*   Construct a UDP socket with the given local port
-	*   @param localPort local port
-	*   @exception SocketException thrown if unable to create UDP socket
+	/**	Construct a UDP socket binded to the given local port
+	*	@param		localPort			the port this socket will bind to
+	*	@param		maxTimeoutMS		the maximum time given to wait on data from a remote client (in milliseconds)
+	*   @exception	SocketException		thrown if unable to create an RUDP socket
 	*/
 	explicit UDPSocket(uint16_t localPort, uint32_t maxTimeoutMS = 0U);
 
-	/**
-	*   Construct a UDP socket with the given local port and address
-	*   @param localAddress local address
-	*   @param localPort local port
-	*   @exception SocketException thrown if unable to create UDP socket
-	UDPSocket(const std::string &localAddress, uint16_t localPort);
+	/**	Set the maximum time to wait on data from a remote client
+	*	@param		timeoutMS		timeout in milliseconds
 	*/
-
-	/**/
 	void SetMaximumConnectionTimeOut(uint32_t timeoutMS);
 
-	/**
-	*   Unset foreign address and port
-	*   @return true if disassociation is successful
-	*   @exception SocketException thrown if unable to disconnect UDP socket
-	void Disconnect(); //throw(SocketException);
-	*/
-
-	/**
-	*   Send the given buffer as a UDP datagram to the
-	*   specified address/port
-	*   @param buffer buffer to be written
-	*   @param bufferLen number of bytes to write
-	*   @param foreignAddress address (IP address or name) to send to
-	*   @param foreignPort port number to send to
-	*   @return true if send is successful
-	*   @exception SocketException thrown if unable to send datagram
-	*/
+	/** Send the buffer to the specified remote client (sendto() equivalent)
+	*   @param		buffer				the buffer to send
+	*   @param		bufferSize			the size of the buffer given
+	*   @param		remoteAddress		address (IP address or name) to send to
+	*   @param		remotePort			port number to send to
+	*   @return							true if send is successful
+	*   @exception	SocketException		thrown if unable to send datagram
+	*/	
 	virtual bool SendTo(const void* buffer, uint32_t bufferSize, const std::string& remoteAddress, uint16_t remotePort);
 
-	/**
-	*   Read read up to bufferLen bytes data from this socket.  The given buffer
-	*   is where the data will be placed
-	*   @param buffer buffer to receive data
-	*   @param bufferLen maximum number of bytes to receive
-	*   @param sourceAddress address of datagram source
-	*   @param sourcePort port of data source
-	*   @return number of bytes received and -1 for error
-	*   @exception SocketException thrown if unable to receive datagram
+	/**	Receives a message from the remote client and passes it into the buffer (recvfrom() equivalent).
+	*	@note		The remote client's address and port, as well as the size of the message received, is returned through the parameter.
+	*   @param		buffer					the buffer for the received message to be stored
+	*   @param		InOutBufferSize			insert the size of the buffer given and reassigns it with the new size of the same buffer for the contained message
+	*   @param		remoteAddress			assigns the address to the remote client that sent the message
+	*   @param		remotePort				assigns the port to the remote client that sent the message
+	*	@param		maxTimeoutMS		the maximum time given to wait on data from a remote client (in milliseconds)
+	*   @return							true if send is successful
+	*   @exception	SocketException		thrown if unable to receive datagram
 	*/
 	virtual bool ReceiveFrom(void* OutBuffer, uint32_t& InOutBufferSize, std::string& OutRemoteAddress, uint16_t& OutRemotePort, uint32_t maxTimeoutMS = -1);
 
-
-	/**/
+	/**	Establishes a connection between the remote client and this client (by simply storing the remote client info).
+	*	@param	remoteAddress			the remote client's address
+	*	@param	remotePort				the remote client's port
+	*/
 	virtual bool Connect(const std::string &remoteAddress, uint16_t remotePort) override;
-	/**
-	*   Send the given buffer as a UDP datagram to the
-	*   specified address/port
-	*   @param buffer buffer to be written
-	*   @param bufferLen number of bytes to write
-	*   @param foreignAddress address (IP address or name) to send to
-	*   @param foreignPort port number to send to
-	*   @return true if send is successful
-	*   @exception SocketException thrown if unable to send datagram
+
+	/**	Sends the buffer to the remote client (that is assigned when Connect() is called).
+	*   @param	buffer					the buffer to send
+	*   @param	bufferSize				the size of the buffer given
+	*   @exception SocketException		thrown if unable to send data
 	*/
 	virtual bool Send(const void *buffer, uint32_t bufferSize) override;
 
-	/**
-	*   Read read up to bufferLen bytes data from this socket.  The given buffer
-	*   is where the data will be placed
-	*   @param buffer buffer to receive data
-	*   @param bufferLen maximum number of bytes to receive
-	*   @param sourceAddress address of datagram source
-	*   @param sourcePort port of data source
-	*   @return number of bytes received and -1 for error
-	*   @exception SocketException thrown if unable to receive datagram
+	/**	Receives a message from the remote client (that is assigned when Connect() is called) and passes it into the buffer.
+	*	@note	This function sets the remote address and port if no connection is established (through the Connect() function call).
+	*   @param	buffer					the buffer for the received message to be stored
+	*   @param	bufferSize				the size of the buffer given
+	*   @exception SocketException		thrown if unable to send data
 	*/
 	virtual uint32_t Receive(void *buffer, uint32_t bufferSize) override;
 
-	/**/
+	/**	Get the remote address that this UDP socket has saved for a "connection"
+	*   @return	the remote address stored
+	*/
 	std::string GetRemoteAddress() override;
 
-	/**/
+	/**	Get the remote port that this UDP socket has saved for a "connection"
+	*   @return	the remote port stored
+	*/
 	uint16_t GetRemotePort() override;
 
-	/**
-	*   Set the multicast TTL
-	*   @param multicastTTL multicast TTL
-	*   @exception SocketException thrown if unable to set TTL
-	void setMulticastTTL(unsigned char multicastTTL);
-	*/
-
-	/**
-	*   Join the specified multicast group
-	*   @param multicastGroup multicast group address to join
-	*   @exception SocketException thrown if unable to join group
-	void joinGroup(const std::string &multicastGroup);
-	*/
-
-	/**
-	*   Leave the specified multicast group
-	*   @param multicastGroup multicast group address to leave
-	*   @exception SocketException thrown if unable to leave group
-	void leaveGroup(const std::string &multicastGroup);
-	*/
-
 protected:
+	// Set socket to broadcast
 	void SetBroadcast();
 };
 
+
+/*	UDP server socket class	*/
 class UDPServerSocket : private UDPSocket, public IServerSocket
 {
+	// List of clients accepted by this server
 	std::vector<std::shared_ptr<UDPSocket>> mClients;
 public:
-	explicit UDPServerSocket(uint16_t listenPort, uint32_t maxConnectionTimeout = 1000U);
+	/**	Construct a UDP Server Socket, listening on the given port.
+	*   @param		localPort			the local port of this server socket. A value of zero will give a system-assigned unused port
+	*	@param		maxTimeoutMS		the maximum time given to wait on data from a remote client (in milliseconds)
+	*   @exception	SocketException		thrown if unable to create TCP server socket
+	*/
+	explicit UDPServerSocket(uint16_t listenPort, uint32_t maxTimeoutMS = 1000U);
 
+	/**	Blocks until a message is received from a remote client, and establish them for the connection.
+	*   @return							a new and open UDPSocket instance
+	*   @exception	SocketException		thrown if attempt to accept a new connection fails
+	*/
 	UDPSocket* Accept() override;
+
+	/**	Retrieves the listening port number that this server is utilizing
+	*	@return		the listening port number
+	*/
 	uint16_t GetListeningPort() override;
 };

@@ -3,15 +3,6 @@
 #include "UDPSocket.h"
 #include "SocketException.h"
 
-// UDPSocket Code
-
-/*
-UDPSocket::UDPSocket(const std::string &localAddress, unsigned short localPort) : Socket(SOCK_DGRAM, IPPROTO_UDP)
-{
-	setLocalAddressAndPort(localAddress, localPort);
-	setBroadcast();
-}*/
-
 void UDPSocket::SetBroadcast()
 {
 	// If this fails, we'll hear about it when we try to send.  This will allow 
@@ -21,29 +12,6 @@ void UDPSocket::SetBroadcast()
 		(raw_type *)&broadcastPermission, sizeof(broadcastPermission));
 	WSAManager::StoreLastErrorCode();
 }
-
-/*
-void UDPSocket::Disconnect()
-{
-	sockaddr_in nullAddr;
-	memset(&nullAddr, 0, sizeof(nullAddr));
-	nullAddr.sin_family = AF_UNSPEC;
-
-	// Try to disconnect
-	if (connect(sockDesc, (sockaddr *)&nullAddr, sizeof(nullAddr)) < 0)
-	{
-#ifdef WIN32
-		if (errno != WSAEAFNOSUPPORT)
-		{
-#else
-		if (errno != EAFNOSUPPORT)
-		{
-#endif
-			throw SocketException("Disconnect failed (connect())", true);
-		}
-	}
-}
-*/
 
 UDPSocket::UDPSocket(uint32_t maxTimeoutMS) : Socket(SOCK_DGRAM, IPPROTO_UDP)
 	, mMaxTimeout(maxTimeoutMS), mRemoteAddress(), mRemotePort(), bIsConnectionOriented(false)
@@ -74,23 +42,14 @@ void UDPSocket::SetMaximumConnectionTimeOut(uint32_t timeoutMS)
 bool UDPSocket::SendTo(const void * buffer, uint32_t bufferSize, const std::string & remoteAddress, uint16_t remotePort)
 {
 	sockaddr_in destAddr;
-	FillAddr(remoteAddress, remotePort, destAddr);
-
-	// Write out the whole buffer as a single message.
 	uint32_t bytesSent;
+	AssignSockAddr(remoteAddress, remotePort, destAddr);
 
 	bytesSent = sendto(mSocket, reinterpret_cast<const raw_type *>(buffer), bufferSize, 0, (sockaddr *)&destAddr, sizeof(destAddr));
 	WSAManager::StoreLastErrorCode();
 
 	if (bytesSent != bufferSize)
 	{
-		/* TODO: Delete
-		std::string message("Send failed (sendto()) with error ");
-		int error = WSAGetLastError();
-		char digits[10];
-		_itoa_s(error, digits, 10);
-		message.append(digits);
-		*/
 		throw SocketException("Send failed (sendto()) with error ", true, true);
 	}
 
@@ -138,14 +97,6 @@ bool UDPSocket::ReceiveFrom(void * OutBuffer, uint32_t& InOutBufferSize, std::st
 		int error = WSAManager::GetLastErrorCode();
 		if (error != WSAEWOULDBLOCK && error != WSAEMSGSIZE)
 		{
-			/*
-			std::string message("Receive failed (sendto()) with error ");
-			char digits[10];
-			_itoa_s(error, digits, 10);
-			message.append(digits);
-
-			throw SocketException(message.c_str(), true);
-			*/
 			throw SocketException("Receive failed (sendto())", true, true);
 		}
 		else return false;
@@ -203,47 +154,9 @@ uint16_t UDPSocket::GetRemotePort()
 	return mRemotePort;
 }
 
-/*
-void UDPSocket::setMulticastTTL(unsigned char multicastTTL) //throw(SocketException)
-{
-	if (setsockopt(mSocket, IPPROTO_IP, IP_MULTICAST_TTL,
-		(raw_type *)&multicastTTL, sizeof(multicastTTL)) < 0)
-	{
-		throw SocketException("Multicast TTL set failed (setsockopt())", true);
-	}
-}
-
-void UDPSocket::joinGroup(const std::string &multicastGroup) //throw(SocketException)
-{
-	struct ip_mreq multicastRequest;
-
-	multicastRequest.imr_multiaddr.s_addr = inet_addr(multicastGroup.c_str());
-	multicastRequest.imr_interface.s_addr = htonl(INADDR_ANY);
-	if (setsockopt(mSocket, IPPROTO_IP, IP_ADD_MEMBERSHIP,
-		(raw_type *)&multicastRequest,
-		sizeof(multicastRequest)) < 0)
-	{
-		throw SocketException("Multicast group join failed (setsockopt())", true);
-	}
-}
-
-void UDPSocket::leaveGroup(const std::string &multicastGroup) //throw(SocketException)
-{
-	struct ip_mreq multicastRequest;
-
-	multicastRequest.imr_multiaddr.s_addr = inet_addr(multicastGroup.c_str());
-	multicastRequest.imr_interface.s_addr = htonl(INADDR_ANY);
-	if (setsockopt(mSocket, IPPROTO_IP, IP_DROP_MEMBERSHIP,
-		(raw_type *)&multicastRequest,
-		sizeof(multicastRequest)) < 0)
-	{
-		throw SocketException("Multicast group leave failed (setsockopt())", true);
-	}
-}
-*/
+UDPServerSocket::UDPServerSocket(uint16_t listenPort, uint32_t maxTimeoutMS) : UDPSocket(listenPort, maxTimeoutMS) {}
 
 
-UDPServerSocket::UDPServerSocket(uint16_t listenPort, uint32_t maxConnectionTimeout) : UDPSocket(listenPort, maxConnectionTimeout) {}
 
 UDPSocket * UDPServerSocket::Accept()
 {
@@ -266,6 +179,7 @@ UDPSocket * UDPServerSocket::Accept()
 	mClients.push_back(client);
 	return client.get();
 }
+
 uint16_t UDPServerSocket::GetListeningPort()
 {
 	return GetLocalPort();

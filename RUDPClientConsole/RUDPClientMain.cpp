@@ -25,14 +25,16 @@ int BP(int condition)
 	return condition;
 }
 
+#define config config	// Simply used for identifying config's effect in code (using Visual Studio text color)
+
 int __cdecl main()
 {
-	std::vector<std::string> configLines = ConfigReader::ReadFile("../Content/config.txt");
-	if (configLines.empty())
+	// ========================== Parse Config File =========================
+	config_t config;
+	if (!ConfigReader::ParseConfig(config, CONFIG_FILE_PATH))
 	{
 		return BP(0);
 	}
-	const char * serverAddress = configLines[0].c_str();
 
 	// Re-seed
 	srand(static_cast<unsigned int>(time(0)));
@@ -44,7 +46,7 @@ int __cdecl main()
 		///RUDPStream server = RUDPClient::ConnectToServer(server_ip, DEFAULT_SERVER_PORT_NUMBER, DEFAULT_SERVER_PORT_NUMBER + 1000, 1500);
 		RUDPSocket server(DEFAULT_SERVER_PORT_NUMBER + 1000U, 1500);
 		
-		server.Connect(serverAddress, DEFAULT_SERVER_PORT_NUMBER);
+		server.Connect(config.serverAddress, DEFAULT_SERVER_PORT_NUMBER);
 
 		if (server.IsOpen() == false)
 		{
@@ -61,7 +63,7 @@ int __cdecl main()
 			bool isSuccess;
 
 			///bytesSent = server.Send(TEST_MESSAGE);
-			isSuccess = server.Send(TEST_MESSAGE.c_str(), static_cast<uint32_t>(TEST_MESSAGE.length()));
+			isSuccess = server.Send(config.message.c_str(), static_cast<uint32_t>(config.message.length()));
 			if (isSuccess)
 			{
 				Logger::PrintF(__FILE__, "Failed to send datagram\n");

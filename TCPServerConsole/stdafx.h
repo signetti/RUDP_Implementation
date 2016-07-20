@@ -11,8 +11,4 @@
 #include <tchar.h>
 
 
-#include "TCPStream.h"
-#include "TCPServer.h"
-
-
 // TODO: reference additional headers your program requires here

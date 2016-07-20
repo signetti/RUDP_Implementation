@@ -1,18 +1,8 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <Filter Include="Resource Files">
-      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
-      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
-    </Filter>
     <Filter Include="Socket">
       <UniqueIdentifier>{6edf31fa-020b-44c8-b0ca-287bfe68c657}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="TCP">
-      <UniqueIdentifier>{6c459c70-c8ad-4793-8cda-09892e1154b9}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="RUDP">
-      <UniqueIdentifier>{7771659b-8251-4098-8bb7-f68b79a06f4d}</UniqueIdentifier>
     </Filter>
     <Filter Include="Utils">
       <UniqueIdentifier>{916f37d1-58e6-4b23-ac4d-b10c49f11b40}</UniqueIdentifier>
@@ -21,8 +11,20 @@
       <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
       <Extensions>h;hh;hpp;hxx;hm;inl;inc;xsd</Extensions>
     </Filter>
-    <Filter Include="RUDP\Helper">
+    <Filter Include="Socket\TCP">
+      <UniqueIdentifier>{1fac62b4-49a8-4217-a733-33a53986240f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Socket\UDP">
+      <UniqueIdentifier>{6498dffc-2cd3-4e29-8cc9-c7334a50ec87}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Socket\RUDP">
+      <UniqueIdentifier>{bbbb9217-5b16-4a97-86e4-e90bc115e304}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Socket\RUDP\Helper">
       <UniqueIdentifier>{b0856cf8-b702-4fa6-803c-47d589c4ff8b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="TestConsole">
+      <UniqueIdentifier>{7771659b-8251-4098-8bb7-f68b79a06f4d}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -41,29 +43,8 @@
     <ClInclude Include="WSAManager.h">
       <Filter>Socket</Filter>
     </ClInclude>
-    <ClInclude Include="TCPStream.h">
-      <Filter>TCP</Filter>
-    </ClInclude>
-    <ClInclude Include="TCPClient.h">
-      <Filter>TCP</Filter>
-    </ClInclude>
-    <ClInclude Include="TCPServer.h">
-      <Filter>TCP</Filter>
-    </ClInclude>
     <ClInclude Include="ConfigReader.h">
       <Filter>Utils</Filter>
-    </ClInclude>
-    <ClInclude Include="SharedTestData.h">
-      <Filter>Utils</Filter>
-    </ClInclude>
-    <ClInclude Include="RUDPClient.h">
-      <Filter>RUDP</Filter>
-    </ClInclude>
-    <ClInclude Include="RUDPServer.h">
-      <Filter>RUDP</Filter>
-    </ClInclude>
-    <ClInclude Include="RUDPStream.h">
-      <Filter>RUDP</Filter>
     </ClInclude>
     <ClInclude Include="StopWatch.h">
       <Filter>Utils</Filter>
@@ -71,32 +52,32 @@
     <ClInclude Include="SocketException.h">
       <Filter>Socket</Filter>
     </ClInclude>
-    <ClInclude Include="UDPSocket.h">
-      <Filter>Socket</Filter>
-    </ClInclude>
     <ClInclude Include="SocketGlobal.h">
-      <Filter>Socket</Filter>
-    </ClInclude>
-    <ClInclude Include="RUDPSocket.h">
-      <Filter>Socket</Filter>
-    </ClInclude>
-    <ClInclude Include="TCPSocket.h">
-      <Filter>Socket</Filter>
-    </ClInclude>
-    <ClInclude Include="CommunicatingSocket.h">
       <Filter>Socket</Filter>
     </ClInclude>
     <ClInclude Include="ImmediateFunctionCall.h">
       <Filter>Utils</Filter>
     </ClInclude>
     <ClInclude Include="RPacket.h">
-      <Filter>RUDP\Helper</Filter>
-    </ClInclude>
-    <ClInclude Include="CircularQueue.h">
-      <Filter>Preprocessor</Filter>
+      <Filter>Socket\RUDP\Helper</Filter>
     </ClInclude>
     <ClInclude Include="Logger.h">
       <Filter>Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="RUDPSocket.h">
+      <Filter>Socket\RUDP</Filter>
+    </ClInclude>
+    <ClInclude Include="TCPSocket.h">
+      <Filter>Socket\TCP</Filter>
+    </ClInclude>
+    <ClInclude Include="UDPSocket.h">
+      <Filter>Socket\UDP</Filter>
+    </ClInclude>
+    <ClInclude Include="CircularQueue.h">
+      <Filter>Socket\RUDP\Helper</Filter>
+    </ClInclude>
+    <ClInclude Include="SharedTestData.h">
+      <Filter>TestConsole</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -106,28 +87,7 @@
     <ClCompile Include="WSAManager.cpp">
       <Filter>Socket</Filter>
     </ClCompile>
-    <ClCompile Include="RUDPClient.cpp">
-      <Filter>RUDP</Filter>
-    </ClCompile>
-    <ClCompile Include="RUDPServer.cpp">
-      <Filter>RUDP</Filter>
-    </ClCompile>
-    <ClCompile Include="RUDPStream.cpp">
-      <Filter>RUDP</Filter>
-    </ClCompile>
-    <ClCompile Include="TCPStream.cpp">
-      <Filter>TCP</Filter>
-    </ClCompile>
-    <ClCompile Include="TCPClient.cpp">
-      <Filter>TCP</Filter>
-    </ClCompile>
-    <ClCompile Include="TCPServer.cpp">
-      <Filter>TCP</Filter>
-    </ClCompile>
     <ClCompile Include="ConfigReader.cpp">
-      <Filter>Utils</Filter>
-    </ClCompile>
-    <ClCompile Include="StopWatch.cpp">
       <Filter>Utils</Filter>
     </ClCompile>
     <ClCompile Include="stdafx.cpp">
@@ -136,24 +96,20 @@
     <ClCompile Include="SocketException.cpp">
       <Filter>Socket</Filter>
     </ClCompile>
-    <ClCompile Include="UDPSocket.cpp">
-      <Filter>Socket</Filter>
-    </ClCompile>
-    <ClCompile Include="RUDPSocket.cpp">
-      <Filter>Socket</Filter>
-    </ClCompile>
-    <ClCompile Include="CommunicatingSocket.cpp">
-      <Filter>Socket</Filter>
-    </ClCompile>
-    <ClCompile Include="TCPSocket.cpp">
-      <Filter>Socket</Filter>
-    </ClCompile>
     <ClCompile Include="RPacket.cpp">
-      <Filter>RUDP\Helper</Filter>
+      <Filter>Socket\RUDP\Helper</Filter>
     </ClCompile>
-    <ClCompile Include="CircularQueue.cpp" />
     <ClCompile Include="Logger.cpp">
       <Filter>Utils</Filter>
+    </ClCompile>
+    <ClCompile Include="RUDPSocket.cpp">
+      <Filter>Socket\RUDP</Filter>
+    </ClCompile>
+    <ClCompile Include="TCPSocket.cpp">
+      <Filter>Socket\TCP</Filter>
+    </ClCompile>
+    <ClCompile Include="UDPSocket.cpp">
+      <Filter>Socket\UDP</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

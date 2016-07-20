@@ -3,97 +3,71 @@
 #include "Socket.h"
 #include "Socket.h"
 
-/**
-*   TCP socket for communication with other TCP sockets
-*/
+/*	C++ class representation for a TCP Socket	*/
 class TCPSocket : public Socket
 {
 public:
-	/**
-	*   Construct a TCP socket with no connection
-	*   @exception SocketException thrown if unable to create TCP socket
+	/**	Construct a TCP socket with no connection (must call Connect() first)
+	*   @exception	SocketException		thrown if unable to create TCP socket
 	*/
 	TCPSocket();
 
-	/**
-	*   Construct a TCP socket with a connection to the given foreign address
-	*   and port
-	*   @param foreignAddress foreign address (IP address or name)
-	*   @param foreignPort foreign port
-	*   @exception SocketException thrown if unable to create TCP socket
+	/**	Establishes a connection between the remote client and this client (connect() equivalent)
+	*	@param	remoteAddress			the remote client's address
+	*	@param	remotePort				the remote client's port
+	*	@exception	SocketException		thrown if unable to establish TCP connection
 	*/
 	bool Connect(const std::string& remoteAddress, uint16_t remotePort) override;
 
-	/**
-	*   Write the given buffer to this socket.  Call connect() before
-	*   calling send()
-	*   @param buffer buffer to be written
-	*   @param bufferLen number of bytes from buffer to be written
-	*   @exception SocketException thrown if unable to send data
+	/**	Sends the buffer to the remote client (send() equivalent)
+	*   @param	buffer					the buffer to send
+	*   @param	bufferSize				the size of the buffer given
+	*   @exception SocketException	thrown if unable to send data
 	*/
 	bool Send(const void *buffer, uint32_t bufferSize) override;
 
-	/**
-	*   Read into the given buffer up to bufferLen bytes data from this
-	*   socket.  Call connect() before calling recv()
-	*   @param buffer buffer to receive the data
-	*   @param bufferLen maximum number of bytes to read into buffer
-	*   @return number of bytes read, 0 for EOF, and -1 for error
-	*   @exception SocketException thrown if unable to receive data
+	/**	Receives a message from the remote client and passes it into the buffer (recv() equivalent)
+	*   @param	buffer					the buffer for the received message to be stored
+	*   @param	bufferSize				the size of the buffer given
+	*   @exception SocketException		thrown if unable to send data
 	*/
 	uint32_t Receive(void *buffer, uint32_t bufferSize) override;
 
-private:
-	// Access for TCPServerSocket::accept() connection creation
+protected:
+	// Grants access for TCPServerSocket::Accept() connection creation
 	friend class TCPServerSocket;
-	TCPSocket(SOCKET newConnSD);
+	// TCPSocket creation using a socket defined for TCP connection
+	TCPSocket(SOCKET socket);
 };
 
 
-/**
-*   TCP socket class for servers
-*/
-class TCPServerSocket : private TCPSocket, public IServerSocket
+/*	TCP server socket class	*/
+class TCPServerSocket : protected TCPSocket, public IServerSocket
 {
 private:
+	// List of clients accepted by this server
 	std::vector<std::shared_ptr<TCPSocket>> mClients;
 
 public:
-	/**
-	*   Construct a TCP socket for use with a server, accepting connections
-	*   on the specified port on any interface
-	*   @param localPort local port of server socket, a value of zero will
-	*                   give a system-assigned unused port
-	*   @param queueLen maximum queue length for outstanding
-	*                   connection requests (default 5)
-	*   @exception SocketException thrown if unable to create TCP server socket
+	/**	Construct a TCP Server Socket, listening on the given port.
+	*   @param		localPort			the local port of this server socket. A value of zero will give a system-assigned unused port
+	*   @param		queueLen			the maximum queue length for outstanding connection requests (default 5)
+	*   @exception	SocketException		thrown if unable to create TCP server socket
 	*/
-	explicit TCPServerSocket(uint16_t listenPort, uint32_t queueLen = 5);
-	~TCPServerSocket() override;
-	/**
-	*   Construct a TCP socket for use with a server, accepting connections
-	*   on the specified port on the interface specified by the given address
-	*   @param localAddress local interface (address) of server socket
-	*   @param localPort local port of server socket
-	*   @param queueLen maximum queue length for outstanding
-	*                   connection requests (default 5)
-	*   @exception SocketException thrown if unable to create TCP server socket
-	
-	TCPServerSocket(const std::string &localAddress, unsigned short localPort, int queueLen = 5); //throw(SocketException);
-	*/
+	explicit TCPServerSocket(uint16_t listenPort, uint32_t queueLen = 5U);
 
-	/**
-	*   Blocks until a new connection is established on this socket or error
-	*   @return new connection socket
-	*   @exception SocketException thrown if attempt to accept a new connection fails
+	/**	Blocks until a new connection is established on this socket (or an exception is thrown)
+	*   @return							a new and open TCPSocket instance
+	*   @exception	SocketException		thrown if attempt to accept a new connection fails
 	*/
 	TCPSocket *Accept() override;
 
+	/**	Retrieves the listening port number that this server is utilizing
+	*	@return		the listening port number
+	*/
 	uint16_t GetListeningPort() override;
 
-	using TCPSocket::Send;
-	using TCPSocket::Receive;
-
 private:
+	// Given the maximum queue length, set the port to listen with that queue size
 	void Listen(uint32_t queueLen);
 };

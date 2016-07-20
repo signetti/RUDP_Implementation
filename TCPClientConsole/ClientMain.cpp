@@ -8,7 +8,7 @@
 #include "ConfigReader.h"
 
 #include "Logger.h"
-//#include "TCPSocket.h"
+
 #include "TCPSocket.h"
 #include "RUDPSocket.h"
 
@@ -28,14 +28,12 @@ int __cdecl main()
 {
 	// ========================== Parse Config File =========================
 	config_t config;
-	if (!ParseConfig(config))
+	if (!ConfigReader::ParseConfig(config, CONFIG_FILE_PATH))
 	{
 		return BP(0);
 	}
 
 	// ===================== Begin Connection to Server =====================
-	///TCPStream server = TCPClient::ConnectToServer(server_ip, DEFAULT_SERVER_PORT);
-	//TCPSocket server; 
 	std::shared_ptr<Socket> server;
 
 	switch (config.protocol)
@@ -78,8 +76,8 @@ int __cdecl main()
 		isDataValid = (config.message == std::string(recvbuf));
 
 		if (isDataValid)
-		{
-			// Server's Test Message is Valid!
+		{	// Server's Test Message is Valid!
+
 			// Send this application's Test Message to Server
 			server->Send(config.message.c_str(), static_cast<uint32_t>(config.message.length() + 1U));
 
@@ -91,8 +89,8 @@ int __cdecl main()
 			isDataValid = (bytesReceived < 8);
 		}
 		else
-		{
-			// Server's Test Message is invalid
+		{	// Server's Test Message is invalid
+
 			// Send bad data to Server
 			server->Send("boo!", 5);
 
@@ -171,8 +169,6 @@ int __cdecl main()
 
 	// ================= End Test On Client-Side ===============
 	Logger::PrintF(__FILE__, "\nTest Complete.\n");
-
-	// Close and Clean Up WinSockAPI
 	server->Close();
 
 	return BP(0);
