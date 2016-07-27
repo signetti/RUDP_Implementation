@@ -5,17 +5,19 @@
 // Create instance of WSAManager to start up WSA before main
 const WSAManager WSAManager::_instance;
 
+
+
+uint16_t WSAManager::sWSAErrorCode;
+
+
 #ifdef WSACODE
 static_assert("WSACODE is already defined.");
 #endif
-
 #define WSACODE(Code, QuickDescription, Description)	std::pair<uint16_t, WSAErrorCodeInfo>((uint32_t)Code, WSAErrorCodeInfo((uint32_t)Code, #Code, QuickDescription, Description)),
 
-
-const WSAErrorCodeInfo WSAManager::WSA_NO_ERROR(0, "WSA_NO_ERROR", "No WSA Error Found.", "No error was produced.");
-uint16_t WSAManager::sWSAErrorCode;
-
 #ifdef WIN32
+const WSAErrorCodeInfo WSAManager::WSA_NO_ERROR(0, "WSA_NO_ERROR", "No WSA Error Found.", "No error was produced.");
+
 const std::map<uint16_t, WSAErrorCodeInfo> WSAManager::sWSAErrorCodeMap = {
 WSACODE(WSA_INVALID_HANDLE			,"Specified event object handle is invalid.", "An application attempts to use an event object, but the specified handle is not valid. Note that this error is returned by the operating system, so the error number may change in future releases of Windows.")
 WSACODE(WSA_NOT_ENOUGH_MEMORY		,"Insufficient memory available.","An application used a Windows Sockets function that directly maps to a Windows function.The Windows function is indicating a lack of required memory resources.Note that this error is returned by the operating system, so the error number may change in future releases of Windows.")
@@ -128,17 +130,16 @@ WSAManager::WSAManager() : WinSockAppData()
 	}
 }
 
-#else
-WSAManager::WSAManager() {}
-#endif
-
 WSAManager::~WSAManager()
 {
-	// Clean-up WinSock API
-#ifdef WIN32
+	// Clean-up WinSock APIs
 	WSACleanup();
-#endif
 }
+
+#else
+WSAManager::WSAManager() {}
+WSAManager::~WSAManager() {}
+#endif
 
 const WSAErrorCodeInfo & WSAManager::GetLastError()
 {

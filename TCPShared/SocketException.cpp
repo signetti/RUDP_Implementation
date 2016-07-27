@@ -8,6 +8,7 @@ SocketException::SocketException(const std::string &message, bool isIncludingWSA
 		std::stringstream message_stream;
 		message_stream << message;
 
+#ifdef WIN32
 		if (isIncludingWSAErrorMessage)
 		{	// Print WSA Error Message
 			auto& wsa_error = WSAManager::GetLastError();
@@ -16,6 +17,7 @@ SocketException::SocketException(const std::string &message, bool isIncludingWSA
 			message_stream << wsa_error.QuickDescription() << '\n';
 			message_stream << wsa_error.Description();
 		}
+#endif
 
 		if(isIncludingSystemMessage)
 		{	// Print System Error Message

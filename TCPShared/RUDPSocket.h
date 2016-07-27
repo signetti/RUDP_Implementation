@@ -13,7 +13,7 @@ class RUDPSocket : public UDPSocket
 private:	/* Structures */
 	struct PacketFrame
 	{
-		uint32_t SequenceNumber;
+		seq_num_t SequenceNumber;
 		uint8_t * DataPointer;
 		uint32_t SizeOfData;
 		bool IsAcknowledged;
@@ -29,13 +29,13 @@ private:	/* Structures */
 		PacketFrame& operator=(PacketFrame&& rhs);
 
 		// Assign Packet Frame as Bad
-		void Reassign(uint32_t newSequenceNumber);
+		void Reassign(seq_num_t newSequenceNumber);
 
 		// Assign Packet Frame, with the data signature
-		void Reassign(uint32_t newSequenceNumber, const uint8_t * newDataPointer, uint32_t newSizeOfData, bool acknowledgement);
+		void Reassign(seq_num_t newSequenceNumber, const uint8_t * newDataPointer, uint32_t newSizeOfData, bool acknowledgement);
 
 		// Assign Packet Frame, with the data signature (that needs to be copied over)
-		void Reassign(uint32_t newSequenceNumber, const std::vector<uint8_t>& newData, bool acknowledgement);
+		void Reassign(seq_num_t newSequenceNumber, const std::vector<uint8_t>& newData, bool acknowledgement);
 	};
 
 	typedef CircularQueue<PacketFrame, RPacket::NumberOfAcksPerPacket> SlidingWindow;
@@ -114,11 +114,11 @@ private:
 	{
 		std::string address;
 		uint16_t port;
-		uint32_t seqNumSent;
-		uint32_t ackNumRecvd;
+		seq_num_t seqNumSent;
+		seq_num_t ackNumRecvd;
 		std::shared_ptr<RUDPSocket> socket;
 
-		PendingClientsT(std::shared_ptr<RUDPSocket> sock, const std::string& address, uint16_t port, uint32_t sequence, uint32_t acknowledgement)
+		PendingClientsT(std::shared_ptr<RUDPSocket> sock, const std::string& address, uint16_t port, seq_num_t sequence, seq_num_t acknowledgement)
 			: socket(sock), address(address), port(port), seqNumSent(sequence), ackNumRecvd(acknowledgement) {}
 	};
 

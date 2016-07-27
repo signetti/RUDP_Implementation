@@ -1,7 +1,4 @@
-// Example IDL file for our monster's schema.
-
-//namespace Test.Sample;
-
+// Packet Schema
 table Packet {
   prot_id:uint;
   sequence:uint;

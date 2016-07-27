@@ -78,12 +78,12 @@ std::uint32_t RPacket::Id() const
 	return mId;
 }
 
-std::uint32_t RPacket::Sequence() const
+seq_num_t RPacket::Sequence() const
 {
 	return mSeq;
 }
 
-std::uint32_t RPacket::Ack() const
+seq_num_t RPacket::Ack() const
 {
 	return mAck;
 }
@@ -165,7 +165,7 @@ std::vector<uint8_t> RPacket::SerializeInstance(std::uint32_t id, seq_num_t seq,
 	flatbuffers::FlatBufferBuilder builder;
 
 	auto bufferF = builder.CreateVector(buffer);
-	auto packet = CreatePacket(builder, id, seq, ack, ack_bitfield.bitfield, msg_id, frag_count, bufferF);
+	auto packet = CreatePacket(builder, id, seq.ToUInt(), ack.ToUInt(), ack_bitfield.bitfield, msg_id, frag_count, bufferF);
 
 	builder.Finish(packet);
 

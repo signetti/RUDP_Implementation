@@ -64,7 +64,7 @@ int __cdecl main()
 
 			///bytesSent = server.Send(TEST_MESSAGE);
 			isSuccess = server.Send(config.message.c_str(), static_cast<uint32_t>(config.message.length()));
-			if (isSuccess)
+			if (!isSuccess)
 			{
 				Logger::PrintF(__FILE__, "Failed to send datagram\n");
 				//return BP(1);

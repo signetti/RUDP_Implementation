@@ -7,8 +7,6 @@
 #include <chrono>	// For CurrentTime()
 #include <assert.h>	// For Testing
 
-LOGGER_SET_FILE_STATE(false, true, BasicColor::WHITE);
-
 // ============================= Helper Functions ================================
 
 const uint64_t CurrentTime(bool reset = false)
@@ -27,6 +25,7 @@ const uint64_t CurrentTime(bool reset = false)
 	}
 }
 
+/*
 static int32_t DiffFromSeq1ToSeq2(seq_num_t seq1, seq_num_t seq2)
 {
 	constexpr static const seq_num_t MaximumSequenceNumberValue = ~(seq_num_t(0U));
@@ -56,7 +55,7 @@ static int32_t DiffFromSeq1ToSeq2(seq_num_t seq1, seq_num_t seq2)
 			return static_cast<int32_t>(diff);
 		}
 	}
-}
+}*/
 
 // =================================== Packet Frame =====================================
 
@@ -139,13 +138,13 @@ RUDPSocket::PacketFrame::~PacketFrame()
 }
 
 // Assign Packet Frame as Bad
-void RUDPSocket::PacketFrame::Reassign(uint32_t newSequenceNumber)
+void RUDPSocket::PacketFrame::Reassign(seq_num_t newSequenceNumber)
 {
 	Reassign(newSequenceNumber, nullptr, 0, false);
 }
 
 // Assign Packet Frame, with the data signature
-void RUDPSocket::PacketFrame::Reassign(uint32_t newSequenceNumber, const uint8_t * newDataPointer, uint32_t newSizeOfData, bool acknowledgement)
+void RUDPSocket::PacketFrame::Reassign(seq_num_t newSequenceNumber, const uint8_t * newDataPointer, uint32_t newSizeOfData, bool acknowledgement)
 {
 	// Free memory
 	if (IsDataCloned && DataPointer != nullptr)
@@ -161,7 +160,7 @@ void RUDPSocket::PacketFrame::Reassign(uint32_t newSequenceNumber, const uint8_t
 }
 
 // Assign Packet Frame, with the data signature (that needs to be copied over)
-void RUDPSocket::PacketFrame::Reassign(uint32_t newSequenceNumber, const std::vector<uint8_t>& newData, bool acknowledgement)
+void RUDPSocket::PacketFrame::Reassign(seq_num_t newSequenceNumber, const std::vector<uint8_t>& newData, bool acknowledgement)
 {
 	// Free memory
 	if (IsDataCloned && DataPointer != nullptr)
@@ -270,17 +269,7 @@ bool RUDPSocket::SendPacket(const RPacket & packet)
 	uint32_t packetSize = static_cast<uint32_t>(packetData.size());
 	bool isSent;
 
-	//try
-	//{	
-	// Send Single-Data Packet
 	isSent = UDPSocket::Send(reinterpret_cast<char *>(packetData.data()), packetSize);
-	/*	TODO: Delete
-	}
-	catch (SocketException ex)
-	{
-		Logger::PrintErrorF(__FILE__, ".... sendto failed with error: %d %s\n", WSAGetLastError(), ex.what());
-		throw;
-	}*/
 
 	{	// DEBUG: For Debugging Purposes only
 		Logger::PrintF(__FILE__, "++++ Sent [%5lld us]: seq<%d> ack<%d> bit<%s> msg_id<%d> frag<%d> bytes_sent<%d>\n"
@@ -304,7 +293,10 @@ void RUDPSocket::MoveToNextMessage(uint32_t fragmentCount)
 
 
 RUDPSocket::RUDPSocket(uint16_t localPort, uint32_t maxTimeoutMS) : UDPSocket(localPort, maxTimeoutMS)
-	, mSequenceNumber(0), mRemoteSequenceNumber(0), mMessageId(0) {}
+	, mSequenceNumber(0), mRemoteSequenceNumber(0), mMessageId(0) 
+{
+	Logger::SetLoggerState(__FILE__, true, true, BasicColor::WHITE);
+}
 
 bool RUDPSocket::Send(const void * buffer, uint32_t bufferSize)
 {
@@ -331,10 +323,6 @@ bool RUDPSocket::Send(const void * buffer, uint32_t bufferSize)
 	bool isSuccess;
 
 	// ======= Send the Data in Packets =====
-
-	// Declare this as a new message
-	//++mMessageId;
-
 	{	// DEBUG: For Debugging Purposes only
 		CurrentTime(true);
 		Logger::PrintF(__FILE__, "==== Begin Sending to %s:%d: seq_num<%d> remote_seq_num<%d> msg_id<%d> max_time<%d>\n"
@@ -342,7 +330,6 @@ bool RUDPSocket::Send(const void * buffer, uint32_t bufferSize)
 	}
 
 	// Create Packet Buffer (with RAII using unique_ptr)
-	//std::unique_ptr<uint8_t[sBufferSize]> packetBuffer = std::unique_ptr<uint8_t[sBufferSize]>();
 	std::unique_ptr<uint8_t> packetBuffer = std::unique_ptr<uint8_t>(reinterpret_cast<uint8_t*>(malloc(sBufferSize)));
 
 	// Make copies of the state of the Local and Remote Sequence
@@ -368,7 +355,7 @@ bool RUDPSocket::Send(const void * buffer, uint32_t bufferSize)
 	PacketFrame poppedFrame;
 
 	// Initialize Acknowledgement characteristics
-	uint32_t lastReceivedRemoteSequenceNumber = mRemoteSequenceNumber - 1;
+	seq_num_t lastReceivedRemoteSequenceNumber = mRemoteSequenceNumber - 1;
 
 	// Other Variables
 	seq_num_t currentSequenceNumber = mSequenceNumber;
@@ -444,7 +431,7 @@ bool RUDPSocket::Send(const void * buffer, uint32_t bufferSize)
 				// =================== Handle Sequence Number =================
 				// ============================================================
 
-				int32_t packetOffset = DiffFromSeq1ToSeq2(lastReceivedRemoteSequenceNumber, packet.Sequence());
+				int32_t packetOffset = packet.Sequence() - lastReceivedRemoteSequenceNumber;
 
 				// Check if the Packet received is more recent
 				if (packetOffset > 0)
@@ -501,7 +488,7 @@ bool RUDPSocket::Send(const void * buffer, uint32_t bufferSize)
 
 				// Set the Sent Packet's Ack Bitfield according to the Ack and AckBitfield received
 				// (recall Seq Number is 1 ahead of what's sent, and Ack Numbers await for the Seq Number ahead)
-				packetOffset = DiffFromSeq1ToSeq2(packet.Ack(), currentSequenceNumber);
+				packetOffset = currentSequenceNumber - packet.Ack();
 				assert(packetOffset >= 0);		// Cannot acknowledge a sequence that is not sent
 					
 				if (packetOffset >= 0)
@@ -588,7 +575,7 @@ uint32_t RUDPSocket::Receive(void * OutBuffer, uint32_t bufferSize)
 	std::unique_ptr<uint8_t> packetBuffer = std::unique_ptr<uint8_t>(reinterpret_cast<uint8_t*>(malloc(sBufferSize)));
 
 	// Initialize the Two Acknowledge State
-	uint32_t lastSentPacketAcknowledged = mSequenceNumber - 1;
+	seq_num_t lastSentPacketAcknowledged = mSequenceNumber - 1;
 	ackbitfield_t localAcknowledgedBitfield(ackbitfield_t::AllTrue);				// Tracks the Sent Packets Acknowledged by the Receiver
 	ackbitfield_t remoteAcknowledgedBitfield(ackbitfield_t::AllTrue);				// Tracks the Received Packets from the Receiver and sets the AckBitfield accordingly
 	
@@ -596,14 +583,14 @@ uint32_t RUDPSocket::Receive(void * OutBuffer, uint32_t bufferSize)
 	SlidingWindow window;
 	PacketFrame currentFrame;
 	PacketFrame poppedFrame;
-	uint32_t oldestRSNfromWindow = mRemoteSequenceNumber - 1;
-	uint32_t newestRSNfromWindow = mRemoteSequenceNumber - 1;
+	seq_num_t oldestRSNfromWindow = mRemoteSequenceNumber - 1;
+	seq_num_t newestRSNfromWindow = mRemoteSequenceNumber - 1;
 
 	// Track the Data being Sequenced
 	std::vector<PacketFrame> sequencedData;
 
-	uint32_t receivedRemoteSequenceNumber;
-	uint32_t currentSequenceNumber = mSequenceNumber;
+	seq_num_t receivedRemoteSequenceNumber;
+	seq_num_t currentSequenceNumber = mSequenceNumber;
 
 	bool isFirstPacket = true;
 	int32_t packetOffset;
@@ -636,7 +623,7 @@ uint32_t RUDPSocket::Receive(void * OutBuffer, uint32_t bufferSize)
 
 		// Calculate how many packets ahead this packet is
 		receivedRemoteSequenceNumber = packet.Sequence();
-		packetOffset = DiffFromSeq1ToSeq2(oldestRSNfromWindow, receivedRemoteSequenceNumber);
+		packetOffset = receivedRemoteSequenceNumber - oldestRSNfromWindow;
 		assert(oldestRSNfromWindow + packetOffset == receivedRemoteSequenceNumber);			// Assert the DiffFromFunction works
 
 																							// Determine if Packet is within a valid range
@@ -690,7 +677,7 @@ uint32_t RUDPSocket::Receive(void * OutBuffer, uint32_t bufferSize)
 
 		// ============================ Handling Sequence Numbers =============================
 
-		packetOffset = DiffFromSeq1ToSeq2(newestRSNfromWindow, receivedRemoteSequenceNumber);
+		packetOffset = receivedRemoteSequenceNumber - newestRSNfromWindow;
 
 		// Determine what to do with packet
 		if (packetOffset > 0)
@@ -800,13 +787,13 @@ uint32_t RUDPSocket::Receive(void * OutBuffer, uint32_t bufferSize)
 		if (isFirstPacket)
 		{
 			assert(localAcknowledgedBitfield.bitfield == ~(0U));	// The sent ack_bitfield must all be initialized to true to avoid confusion...
-			assert(DiffFromSeq1ToSeq2(packet.Ack(), mSequenceNumber) == 0);	// Assert that the two connections are synced...
+			assert(packet.Ack() == mSequenceNumber);	// Assert that the two connections are synced...
 
 			lastSentPacketAcknowledged = mSequenceNumber - 1;
 		}
 		else
 		{
-			packetOffset = DiffFromSeq1ToSeq2(lastSentPacketAcknowledged, packet.Ack());
+			packetOffset = packet.Ack() - lastSentPacketAcknowledged;
 
 			if (packetOffset > 0)
 			{	// More recent acknowledged sequence number received
@@ -1084,8 +1071,8 @@ RUDPSocket* RUDPServerSocket::Accept()
 
 	uint32_t bytesReceived;
 	char buffer[512];
-	uint32_t seqNum;
-	uint32_t ackNum;
+	seq_num_t seqNum;
+	seq_num_t ackNum;
 	RPacket data;
 	bool isSuccess;
 

@@ -35,5 +35,8 @@
     <ClCompile Include="stdafx.cpp">
       <Filter>Preprocessor</Filter>
     </ClCompile>
+    <ClCompile Include="SeqNumber_Test.cpp">
+      <Filter>Unit Tests</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

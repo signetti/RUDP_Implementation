@@ -7,31 +7,34 @@
 struct Packet;
 
 
-
-typedef uint32_t seq_num_t;
-
-struct SequenceNumber
+struct seq_num_t
 {
 private:
-	constexpr static const seq_num_t sMaximumSequenceNumberValue = seq_num_t(~(0U));
-
 	uint32_t Number;
+
 public:
+	constexpr static const int32_t sMaximumRangeValue = 0x7FFFFFFF;
+	constexpr static const int32_t sMinimumRangeValue = 0x80000000;
+
 	// Constructor
-	SequenceNumber(uint32_t number) : Number(number) {}
+	seq_num_t(uint32_t number = 0U) : Number(number) {}
 
 	// ADDITION
-	SequenceNumber& operator+=(const int32_t& value) { Number += value; return (*this); }
-	friend SequenceNumber operator+(const SequenceNumber& lhs, int32_t rhs)		{ return lhs.Number + rhs; }
-	friend SequenceNumber operator+(int32_t lhs, const SequenceNumber& rhs)		{ return lhs + rhs.Number; }
+	seq_num_t& operator++()						{ ++Number; return (*this); }
+	seq_num_t operator++(int)						{ return seq_num_t(Number++); }
+	seq_num_t& operator+=(const int32_t& value)	{ Number += value; return (*this); }
+	friend seq_num_t operator+(const seq_num_t& lhs, int32_t rhs)		{ return lhs.Number + rhs; }
+	friend seq_num_t operator+(int32_t lhs, const seq_num_t& rhs)		{ return lhs + rhs.Number; }
 
 	// SUBTRACTION
-	SequenceNumber& operator-=(const int32_t& value) { Number -= value; }
-	friend SequenceNumber operator-(SequenceNumber lhs, const int32_t& rhs)		{ return lhs.Number - rhs; }
-	friend SequenceNumber operator-(const int32_t& lhs, SequenceNumber rhs)		{ return lhs - rhs.Number; }
+	seq_num_t& operator--()						{ --Number; return (*this); }
+	seq_num_t operator--(int)						{ return seq_num_t(Number--); }
+	seq_num_t& operator-=(const int32_t& value)	{ Number -= value; }
+	friend seq_num_t operator-(seq_num_t lhs, const int32_t& rhs)		{ return lhs.Number - rhs; }
+	friend seq_num_t operator-(const int32_t& lhs, seq_num_t rhs)		{ return lhs - rhs.Number; }
 
 	// SUBTRACTION (Using Wrap-Around)
-	friend int32_t operator-(const SequenceNumber& lhs, const SequenceNumber& rhs)
+	friend int32_t operator-(const seq_num_t& lhs, const seq_num_t& rhs)
 	{
 		const uint32_t& seq1 = lhs.Number;
 		const uint32_t& seq2 = rhs.Number;
@@ -40,56 +43,42 @@ public:
 		if (seq1 > seq2)
 		{	// Difference will result in negative value
 			diff = seq1 - seq2;
-			if (diff > (sMaximumSequenceNumberValue / 2))
+			return static_cast<int32_t>(diff);
+			/*
+			if (diff > sMaximumRangeValue)//(sMaximumSequenceNumberValue / 2))
 			{	// Negative value is actually Positive (due to wrap around)
-				return static_cast<int32_t>((sMaximumSequenceNumberValue / 2) - diff);
+				return sMinimumRangeValue + static_cast<int32_t>(diff);
 			}
 			else
 			{	// Return negative difference
-				return 0 - static_cast<int32_t>(diff);
-			}
+				return static_cast<int32_t>(diff);
+			}*/
 		}
 		else
 		{	// Difference will result in positive value
 			diff = seq2 - seq1;
-			if (diff > (sMaximumSequenceNumberValue / 2))
+			return 0 - static_cast<int32_t>(diff);
+			/*
+			if (diff > sMaximumRangeValue)//(sMaximumSequenceNumberValue / 2))
 			{	// Positive value is actually Negative (due to wrap around)
-				return 0 - static_cast<int32_t>((sMaximumSequenceNumberValue / 2) - diff);
+				return 0 - static_cast<int32_t>(sMaximumRangeValue - diff);
 			}
 			else
 			{	// Return positive difference
 				return static_cast<int32_t>(diff);
-			}
+			}*/
 		}
-		/* OLD WAY OF COMPUTING... QUITE ERROR-PRONE...
-		int32_t diff = static_cast<int32_t>(seq2) - static_cast<int32_t>(seq1);
-		if ((diff >= 0) && (diff > MaximumSequenceNumberValue / 2))
-		{	// Numbers DO wrap around, compute difference
-			//return diff - (MaximumSequenceNumberValue / 2);
-			printf("WRAP AROUND COMPUTED: seq1<%d> seq2<%d> diff<%d>", seq1, seq2, (MaximumSequenceNumberValue - seq2) + seq1);
-			return (MaximumSequenceNumberValue - seq2) + seq1;
-			// Theoretically M - S2 + S1 == M + (S1 - S2) == M - diff, check on this. . .
-		}
-		else if((diff <= 0) && ((-diff) <= MaximumSequenceNumberValue / 2))
-		{	// Numbers DO wrap around, compute difference
-			//return (MaximumSequenceNumberValue / 2) - diff;
-			printf("WRAP AROUND COMPUTED: seq1<%d> seq2<%d> diff<%d>", seq1, seq2, (MaximumSequenceNumberValue - seq1) + seq2);
-			return (MaximumSequenceNumberValue - seq1) + seq2;
-			// Theoretically M - S1 + S2 == M + (S2 - S1) == M + diff, check on this. . .
-		}
-		else
-		{	// Numbers do not wrap around
-			return diff;
-		}*/
 	}
 
 	// Comparisons (Considering Wrap-Around)
-	bool operator<(const SequenceNumber& rhs)	{ return ((*this) - rhs) < 0;  }
-	bool operator<=(const SequenceNumber& rhs)	{ return ((*this) - rhs) <= 0; }
-	bool operator>(const SequenceNumber& rhs)	{ return ((*this) - rhs) > 0;  }
-	bool operator>=(const SequenceNumber& rhs)	{ return ((*this) - rhs) >= 0; }
-	bool operator==(const SequenceNumber& rhs)	{ return ((*this) - rhs) == 0; }
-	bool operator!=(const SequenceNumber& rhs)	{ return ((*this) - rhs) != 0; }
+	bool operator<(const seq_num_t& rhs) const		{ return ((*this) - rhs) < 0;  }
+	bool operator<=(const seq_num_t& rhs) const	{ return ((*this) - rhs) <= 0; }
+	bool operator>(const seq_num_t& rhs) const		{ return (rhs - (*this)) < 0;  }
+	bool operator>=(const seq_num_t& rhs) const	{ return (rhs - (*this)) <= 0; }
+	bool operator==(const seq_num_t& rhs) const	{ return this->Number == rhs.Number; }
+	bool operator!=(const seq_num_t& rhs) const	{ return this->Number != rhs.Number; }
+
+	const uint32_t& ToUInt() const						{ return Number; }
 };
 
 // An easy way to access the ack_bitfield
