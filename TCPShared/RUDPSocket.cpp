@@ -25,38 +25,6 @@ const uint64_t CurrentTime(bool reset = false)
 	}
 }
 
-/*
-static int32_t DiffFromSeq1ToSeq2(seq_num_t seq1, seq_num_t seq2)
-{
-	constexpr static const seq_num_t MaximumSequenceNumberValue = ~(seq_num_t(0U));
-
-	uint32_t diff;
-	if (seq1 > seq2)
-	{	// Difference will result in negative value
-		diff = seq1 - seq2;
-		if (diff > (MaximumSequenceNumberValue / 2))
-		{	// Negative value is actually Positive (due to wrap around)
-			return static_cast<int32_t>((MaximumSequenceNumberValue / 2) - diff);
-		}
-		else
-		{	// Return negative difference
-			return 0 - static_cast<int32_t>(diff);
-		}
-	}
-	else
-	{	// Difference will result in positive value
-		diff = seq2 - seq1;
-		if (diff > (MaximumSequenceNumberValue / 2))
-		{	// Positive value is actually Negative (due to wrap around)
-			return 0 - static_cast<int32_t>((MaximumSequenceNumberValue / 2) - diff);
-		}
-		else
-		{	// Return positive difference
-			return static_cast<int32_t>(diff);
-		}
-	}
-}*/
-
 // =================================== Packet Frame =====================================
 
 RUDPSocket::PacketFrame::PacketFrame() : SequenceNumber(0), DataPointer(nullptr), SizeOfData(0), IsAcknowledged(false), IsDataCloned(false) {}

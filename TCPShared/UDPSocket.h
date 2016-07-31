@@ -44,10 +44,10 @@ public:
 
 	/**	Receives a message from the remote client and passes it into the buffer (recvfrom() equivalent).
 	*	@note		The remote client's address and port, as well as the size of the message received, is returned through the parameter.
-	*   @param		buffer					the buffer for the received message to be stored
-	*   @param		InOutBufferSize			insert the size of the buffer given and reassigns it with the new size of the same buffer for the contained message
-	*   @param		remoteAddress			assigns the address to the remote client that sent the message
-	*   @param		remotePort				assigns the port to the remote client that sent the message
+	*   @param		buffer				the buffer for the received message to be stored
+	*   @param		InOutBufferSize		insert the size of the buffer given and reassigns it with the new size of the same buffer for the contained message
+	*   @param		remoteAddress		assigns the address to the remote client that sent the message
+	*   @param		remotePort			assigns the port to the remote client that sent the message
 	*	@param		maxTimeoutMS		the maximum time given to wait on data from a remote client (in milliseconds)
 	*   @return							true if send is successful
 	*   @exception	SocketException		thrown if unable to receive datagram
@@ -86,6 +86,8 @@ public:
 	uint16_t GetRemotePort() override;
 
 protected:
+	friend class UDPServerSocket;
+
 	// Set socket to broadcast
 	void SetBroadcast();
 };
@@ -96,6 +98,7 @@ class UDPServerSocket : private UDPSocket, public IServerSocket
 {
 	// List of clients accepted by this server
 	std::vector<std::shared_ptr<UDPSocket>> mClients;
+	uint32_t mAvailablePort;
 public:
 	/**	Construct a UDP Server Socket, listening on the given port.
 	*   @param		localPort			the local port of this server socket. A value of zero will give a system-assigned unused port

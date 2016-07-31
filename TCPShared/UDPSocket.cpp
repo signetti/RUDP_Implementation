@@ -11,6 +11,8 @@ void UDPSocket::SetBroadcast()
 	setsockopt(mSocket, SOL_SOCKET, SO_BROADCAST,
 		(raw_type *)&broadcastPermission, sizeof(broadcastPermission));
 	WSAManager::StoreLastErrorCode();
+
+	Logger::SetLoggerState(__FILE__, true, true, BasicColor::CYAN);
 }
 
 UDPSocket::UDPSocket(uint32_t maxTimeoutMS) : Socket(SOCK_DGRAM, IPPROTO_UDP)
@@ -26,14 +28,6 @@ UDPSocket::UDPSocket(uint16_t localPort, uint32_t maxTimeoutMS) : Socket(SOCK_DG
 	SetBroadcast();
 }
 
-bool UDPSocket::Connect(const std::string & remoteAddress, uint16_t remotePort)
-{
-	mRemoteAddress = remoteAddress;
-	mRemotePort = remotePort;
-	bIsConnectionOriented = true;
-	return true;
-}
-
 void UDPSocket::SetMaximumConnectionTimeOut(uint32_t timeoutMS)
 {
 	mMaxTimeout = timeoutMS;
@@ -47,6 +41,8 @@ bool UDPSocket::SendTo(const void * buffer, uint32_t bufferSize, const std::stri
 
 	bytesSent = sendto(mSocket, reinterpret_cast<const raw_type *>(buffer), bufferSize, 0, (sockaddr *)&destAddr, sizeof(destAddr));
 	WSAManager::StoreLastErrorCode();
+
+	Logger::PrintF(__FILE__, "Sent \"%s\" to %s:%d.\n", reinterpret_cast<const char *>(buffer), remoteAddress.c_str(), remotePort);
 
 	if (bytesSent != bufferSize)
 	{
@@ -84,7 +80,7 @@ bool UDPSocket::ReceiveFrom(void * OutBuffer, uint32_t& InOutBufferSize, std::st
 		switch (state)
 		{
 		case 0:		return false;														//   0: Timed out
-		case -1:	throw SocketException("Select failed (sendto())", true); break;		//  -1: Error occurred
+		case -1:	throw SocketException("Select failed (select())", true); break;		//  -1: Error occurred
 		default:	break;																// > 0: Ready to be read
 		}
 	}
@@ -97,7 +93,7 @@ bool UDPSocket::ReceiveFrom(void * OutBuffer, uint32_t& InOutBufferSize, std::st
 		int error = WSAManager::GetLastErrorCode();
 		if (error != WSAEWOULDBLOCK && error != WSAEMSGSIZE)
 		{
-			throw SocketException("Receive failed (sendto())", true, true);
+			throw SocketException("Receive failed (recvfrom())", true, true);
 		}
 		else return false;
 	}
@@ -109,8 +105,41 @@ bool UDPSocket::ReceiveFrom(void * OutBuffer, uint32_t& InOutBufferSize, std::st
 		WSAManager::StoreLastErrorCode();
 	}
 
+	Logger::PrintF(__FILE__, "Received \"%s\" from %s:%d.\n", reinterpret_cast<const char *>(OutBuffer), OutRemoteAddress.c_str(), OutRemotePort);
+
 	// Return Bytes Received
 	InOutBufferSize = bytesReceived;
+	return true;
+}
+
+bool UDPSocket::Connect(const std::string & serverAddress, uint16_t serverPort)
+{
+
+	// Send to server, to complete connection
+	uint32_t bytesReceived;
+	std::string remoteAddress;
+	uint16_t remotePort;
+
+	char buffer[2];
+	uint32_t bufferSize;
+	do
+	{
+		// Send Message
+		bufferSize = 2;
+		SendTo("S", bufferSize, serverAddress, serverPort);
+
+		// Receive from Client
+		bytesReceived = ReceiveFrom(buffer, bufferSize, remoteAddress, remotePort, mMaxTimeout);
+		if (remoteAddress != serverAddress)
+		{	// Received message that is not from the given remote address:port, ignore...
+			bytesReceived = 0;
+		}
+	} while (bytesReceived == 0);
+
+	mRemoteAddress = remoteAddress;
+	mRemotePort = remotePort;
+	bIsConnectionOriented = true;
+
 	return true;
 }
 
@@ -125,14 +154,13 @@ uint32_t UDPSocket::Receive(void *buffer, uint32_t bufferSize)
 	std::string farseAddress;
 	uint16_t farsePort;
 
-	uint32_t bytesReceived = ReceiveFrom(buffer, bufferSize, farseAddress, farsePort, mMaxTimeout);
+	bool isSuccess = ReceiveFrom(buffer, bufferSize, farseAddress, farsePort, mMaxTimeout);
 
 	if (bIsConnectionOriented)
 	{
 		if (farsePort != mRemotePort || farseAddress != mRemoteAddress)
 		{	// Received message that is not from the given remote address:port, ignore...
 			memset(buffer, 0, bufferSize);	// For safety purposes
-			bytesReceived = 0;
 		}
 	}
 	else
@@ -141,7 +169,7 @@ uint32_t UDPSocket::Receive(void *buffer, uint32_t bufferSize)
 		mRemotePort = farsePort;
 	}
 
-	return bytesReceived;
+	return (isSuccess) ? bufferSize : 0;
 }
 
 std::string UDPSocket::GetRemoteAddress()
@@ -154,13 +182,13 @@ uint16_t UDPSocket::GetRemotePort()
 	return mRemotePort;
 }
 
-UDPServerSocket::UDPServerSocket(uint16_t listenPort, uint32_t maxTimeoutMS) : UDPSocket(listenPort, maxTimeoutMS) {}
 
 
+UDPServerSocket::UDPServerSocket(uint16_t listenPort, uint32_t maxTimeoutMS) : UDPSocket(listenPort, maxTimeoutMS), mAvailablePort(listenPort + 1), mClients(){}
 
 UDPSocket * UDPServerSocket::Accept()
 {
-	std::shared_ptr<UDPSocket> client = std::make_shared<UDPSocket>(mMaxTimeout);
+	std::shared_ptr<UDPSocket> client = std::make_shared<UDPSocket>(mAvailablePort, mMaxTimeout);
 
 	// Simple UDP Receive, do not write-over current remote client
 	std::string remoteAddress;
@@ -175,8 +203,13 @@ UDPSocket * UDPServerSocket::Accept()
 	} while (!isSuccess);
 	
 	// Successfully retrieved a UDP message, make the remote sender the connection to establish
-	client->Connect(remoteAddress, remotePort);
+	client->mRemoteAddress = remoteAddress;
+	client->mRemotePort = remotePort;
+	client->bIsConnectionOriented = true;
+	client->SendTo("C", 2, remoteAddress, remotePort);
+
 	mClients.push_back(client);
+	++mAvailablePort;
 	return client.get();
 }
 

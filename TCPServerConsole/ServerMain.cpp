@@ -48,7 +48,6 @@ int __cdecl main()
 			break;
 		}
 
-
 		// Open the server for connection (create socket, bind, then listen)
 
 		// Listen for and accept a client connection
@@ -67,7 +66,7 @@ int __cdecl main()
 
 		bool isDataValid;
 
-		do
+		for (;;)
 		{
 			// Send this application's Test Message to Client
 			client->Send(config.message.c_str(), static_cast<uint32_t>(config.message.length() + 1U));
@@ -78,8 +77,8 @@ int __cdecl main()
 			// Assert that the client is still connected
 			if (bytesReceived <= 0)
 			{
-				Logger::PrintF(__FILE__, "Client disconnected. Ending Test.\n");
-				return BP(1);
+				//Logger::PrintF(__FILE__, "Client disconnected. Ending Test.\n");
+				//return BP(1);
 			}
 			else
 			{
@@ -90,9 +89,15 @@ int __cdecl main()
 				{	// Client sent bad comparison
 					Logger::PrintErrorF(__FILE__, "ERROR: Different test messages were detected from the client. This could cause problems during testing.\n");
 					Logger::PrintF(__FILE__, "Press \'y\' to continue, or press any other key to try again.\n");
+
+					if (getchar() != 'y')
+					{
+						break;
+					}
 				}
+
 			}
-		} while (getchar() != 'y');
+		}
 
 		// Send again to let client know to continue
 		client->Send("yay!", 5);

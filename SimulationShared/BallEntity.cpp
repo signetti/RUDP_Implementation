@@ -38,7 +38,7 @@ void BallEntity::Update(const std::chrono::milliseconds& deltaTime)
 
 	CollideField();
 
-	NetworkManager::GetInstance()->SendBallAction(mID, EActionType::EActionType_MOVE, 10.0f, mPosition, mVelocity, mBallColor);
+	NetworkManager::GetInstance()->SendBallAction(mID, EActionType::EActionType_MOVE, mRadius, mPosition, mVelocity, mBallColor);
 }
 
 void BallEntity::Move(uint32_t color, float radius, const Coord2D & position, const Coord2D & velocity)

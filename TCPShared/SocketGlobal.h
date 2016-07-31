@@ -7,7 +7,7 @@ typedef int SOCKET;             // Socket descriptor
 #pragma warning(disable : 4996)
 
 #ifdef WIN32
-#include <winsock.h>         // For socket(), connect(), send(), and recv()
+#include <winsock2.h>         // For socket(), connect(), send(), and recv()
 typedef int socklen_t;
 typedef char raw_type;       // Type used for raw data on this platform
 #else

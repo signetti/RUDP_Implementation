@@ -30,21 +30,24 @@ void Simulation::Initialize()
 		NetworkManager::GetInstance()->SendFieldAction(id, EActionType::EActionType_SPAWN, 3500, 3500, RGB(0xFF, 0xCC, 0x00));
 
 		// Create Balls
+		float radius = 30.0f;
+		uint32_t color;// = RGB(0xBB, 0xEE, 0xEE);
 		Coord2D position;
 		Coord2D velocity;
-		for (int ballCount = 0; ballCount < 2; ++ballCount)
+		for (int ballCount = 0; ballCount < 50; ++ballCount)
 		{
-			velocity.x = getRangedRandom(-20.0f, 20.0f);
-			velocity.y = getRangedRandom(-20.0f, 20.0f);
+			velocity.x = getRangedRandom(-10.0f, 10.0f);
+			velocity.y = getRangedRandom(-10.0f, 10.0f);
+			color = getRangedRandom(0x00888888, 0x00FFFFFF);
 
 			id = GenerateID();
-			EntityManager::GetInstance()->AddEntity(new BallEntity(id, 20.0f, position, velocity, RGB(0xBB, 0xEE, 0xEE)));
-			NetworkManager::GetInstance()->SendBallAction(id, EActionType::EActionType_SPAWN, 10.0f, position, velocity, RGB(0xBB, 0xEE, 0xEE));
+			EntityManager::GetInstance()->AddEntity(new BallEntity(id, radius, position, velocity, color));
+			NetworkManager::GetInstance()->SendBallAction(id, EActionType::EActionType_SPAWN, radius, position, velocity, color);
 		}
 	}
 	else
 	{	// Establish Connection / Initialize Manager
-		NetworkManager::CreateClientInstance(std::chrono::milliseconds(10));
+		NetworkManager::CreateClientInstance(std::chrono::milliseconds(100));
 	}
 }
 

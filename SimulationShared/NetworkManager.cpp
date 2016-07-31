@@ -26,6 +26,7 @@ NetworkManager::NetworkManager(const std::chrono::milliseconds& reservedTime) : 
 
 void NetworkManager::CreateServerInstance()
 {
+	Logger::SetLoggerState(__FILE__, true, false, BasicColor::WHITE);
 	if (sInstance == nullptr)
 	{
 		sInstance = new NetworkManager();
@@ -39,6 +40,7 @@ void NetworkManager::CreateServerInstance()
 
 void NetworkManager::CreateClientInstance(const std::chrono::milliseconds& reservedTime)
 {
+	Logger::SetLoggerState(__FILE__, false, false, BasicColor::WHITE);
 	if (sInstance == nullptr)
 	{
 		sInstance = new NetworkManager(reservedTime);
@@ -226,8 +228,8 @@ void NetworkManager::SendBallAction(id_number id, EActionType actionType, float 
 
 		// Send Action Data
 		mSocket->Send(packet_serialized, packet_size);
-		Logger::PrintF(__FILE__, "Action %s Sent to Ball #%d: rad<%.02f> pos<%.02f,%.02f> vel<%.02f,%.02f>\n"
-			, ActionTypeToChar(actionType), id, radius, position.x, position.y, velocity.x, velocity.y);
+	//	Logger::PrintF(__FILE__, "Action %s Sent to Ball #%d: rad<%.02f> pos<%.02f,%.02f> vel<%.02f,%.02f>\n"
+	//		, ActionTypeToChar(actionType), id, radius, position.x, position.y, velocity.x, velocity.y);
 	}
 }
 
@@ -252,8 +254,8 @@ void NetworkManager::SendFieldAction(id_number id, EActionType actionType, uint3
 		// Send Action Data
 		mSocket->Send(packet_serialized, packet_size);
 
-		Logger::PrintF(__FILE__, "Action %s Sent to Field #%d: width<%.02f> height<%.02f>\n"
-			, ActionTypeToChar(actionType), id, width, height);
+	//	Logger::PrintF(__FILE__, "Action %s Sent to Field #%d: width<%.02f> height<%.02f>\n"
+	//		, ActionTypeToChar(actionType), id, width, height);
 	}
 }
 

@@ -9,6 +9,10 @@
 /*	C++ base class for Winsock sockets	*/
 class Socket
 {
+protected:
+	// The socket descriptor
+	SOCKET mSocket;
+
 public:
 	/**	Socket destructor. This base class destructor handles closing the socket so children of this class do not have to.	*/
 	virtual ~Socket();
@@ -73,8 +77,6 @@ public:
 	static void AssignSockAddr(const std::string& address, uint16_t port, sockaddr_in &OutSockAddr);
 
 protected:
-	// The socket descriptor
-	SOCKET mSocket;
 	// The Socket created with a given address family type and protocol (socket() equivalent)
 	Socket(int type, int protocol);
 	// The socket created by simply assigning the socket to this class
