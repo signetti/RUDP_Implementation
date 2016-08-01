@@ -11,6 +11,8 @@ struct Coord2D
 };
 
 typedef uint32_t id_number;
+typedef uint32_t millisecond;
+typedef float float_t;
 /*
 struct Color
 {

@@ -1,10 +1,20 @@
 #include "stdafx.h"
+//#include <assert.h>
+#include "random.h"
 
 #include "EntityManager.h"
+
+#include "Entity.h"
 #include "BallEntity.h"
 #include "FieldEntity.h"
 
+#undef min
+#include "action_generated.h"
 #include "NetworkManager.h"
+#include "Simulation.h"
+
+#define TURN_OFF_SPAWN true
+
 EntityManager* EntityManager::sInstance = nullptr;
 
 EntityManager::~EntityManager()
@@ -35,10 +45,12 @@ void EntityManager::AddEntity(Entity* entity)
 		if (found == mEntityList.end())
 		{
 			mEntityList.insert(found, std::pair<id_number, Entity* >(key, entity));
+			++mNumberOfSpawns;	// Increment number of spawns
 		}
 		else
 		{
-			throw std::exception("Duplicate Entity being created");
+			delete entity;
+			//throw std::exception("Duplicate Entity being created");
 		}
 	}
 }
@@ -50,6 +62,7 @@ bool EntityManager::RemoveEntityByID(id_number id)
 	if (doesExist)
 	{
 		mEntityList.erase(found);
+		++mNumberOfDestroys;
 	}
 	return doesExist;
 }
@@ -67,6 +80,11 @@ Entity * EntityManager::GetEntityByID(id_number id)
 	}
 }
 
+uint32_t EntityManager::NumberOfEntities() const
+{
+	return static_cast<uint32_t>(mEntityList.size());
+}
+
 void EntityManager::Draw()
 {
 	for (auto& entity : mEntityList)
@@ -75,14 +93,39 @@ void EntityManager::Draw()
 	}
 }
 
-void EntityManager::Update(const std::chrono::milliseconds& deltaTime)
+void EntityManager::Update(const millisecond& deltaTime)
 {
-	(deltaTime);
-	
-	for (auto& entity : mEntityList)
+	std::vector<id_number> ballsToRemove;
+
+	// Update Balls
+	for (auto& element : mEntityList)
 	{
-		entity.second->Update(deltaTime);
-	}/**/
+		auto& id = element.first;
+		BallEntity* entity = reinterpret_cast<BallEntity*>(element.second);
+
+		entity->Update(deltaTime);
+
+		// Remove Ball over lifetime
+		if (id != 0 && entity->GetLifetime() >= getRangedRandom(3000, 5000))
+		{
+			ballsToRemove.push_back(id);
+		}
+	}
+
+#if !TURN_OFF_SPAWN
+	// Remove Balls
+	for (auto& id : ballsToRemove)
+	{
+		bool success = RemoveEntityByID(id);
+		//assert(success);	// No reason to fail
+		NetworkManager::GetInstance()->SendBallAction(id, EActionType::EActionType_DESTROY, 0, Coord2D(), Coord2D(), 0);
+	}
+
+	if (mEntityList.size() < static_cast<uint32_t>(getRangedRandom(20, 50)))
+	{
+		reinterpret_cast<Simulation*>(Simulation::GetInstance())->CreateRandomBall();
+	}
+#endif
 }
 
 void EntityManager::Shutdown()

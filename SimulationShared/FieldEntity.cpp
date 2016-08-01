@@ -40,7 +40,7 @@ void FieldEntity::Draw()
 	DrawLine(left, bottom, left, top, r, g, b);
 }
 
-void FieldEntity::Update(const std::chrono::milliseconds&) {}
+void FieldEntity::Update(const millisecond&) {}
 
 void FieldEntity::Move(uint32_t color, uint32_t width, uint32_t height)
 {

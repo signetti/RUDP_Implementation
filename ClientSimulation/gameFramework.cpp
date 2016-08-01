@@ -441,7 +441,7 @@ int WINAPI WinMain (HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLin
 
 							keyProcess();								// Process Keys
 																		// Update The Counter
-							game->UpdateFrame(std::chrono::milliseconds(tickCount - window.lastTickCount));
+							game->UpdateFrame((millisecond)(tickCount - window.lastTickCount));
 
 							window.lastTickCount = tickCount;			// Set Last Count To Current Count
 

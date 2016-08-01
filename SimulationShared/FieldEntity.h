@@ -25,7 +25,7 @@ public:
 	uint32_t GetHeight()			{ return mHeight; };
 
 	void Draw() override;
-	void Update(const std::chrono::milliseconds& deltaTime) override;
+	void Update(const millisecond& deltaTime) override;
 
 	void Move(uint32_t color, uint32_t width, uint32_t height);
 };

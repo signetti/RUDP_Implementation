@@ -6,6 +6,8 @@
 #include "NetworkManager.h"
 #include "BallEntity.h"
 #include "FieldEntity.h"
+#include "userInterface.h"
+
 #include "random.h"
 #include "baseTypes.h"
 
@@ -30,19 +32,9 @@ void Simulation::Initialize()
 		NetworkManager::GetInstance()->SendFieldAction(id, EActionType::EActionType_SPAWN, 3500, 3500, RGB(0xFF, 0xCC, 0x00));
 
 		// Create Balls
-		float radius = 30.0f;
-		uint32_t color;// = RGB(0xBB, 0xEE, 0xEE);
-		Coord2D position;
-		Coord2D velocity;
 		for (int ballCount = 0; ballCount < 50; ++ballCount)
 		{
-			velocity.x = getRangedRandom(-10.0f, 10.0f);
-			velocity.y = getRangedRandom(-10.0f, 10.0f);
-			color = getRangedRandom(0x00888888, 0x00FFFFFF);
-
-			id = GenerateID();
-			EntityManager::GetInstance()->AddEntity(new BallEntity(id, radius, position, velocity, color));
-			NetworkManager::GetInstance()->SendBallAction(id, EActionType::EActionType_SPAWN, radius, position, velocity, color);
+			CreateRandomBall();
 		}
 	}
 	else
@@ -51,7 +43,23 @@ void Simulation::Initialize()
 	}
 }
 
-void Simulation::UpdateFrame(std::chrono::milliseconds deltaTime)
+void Simulation::CreateRandomBall()
+{
+	auto id = GenerateID();
+	float radius = 30.0f;
+	uint32_t color;
+	Coord2D position;
+	Coord2D velocity;
+
+	velocity.x = getRangedRandom(-10.0f, 10.0f);
+	velocity.y = getRangedRandom(-10.0f, 10.0f);
+	color = getRangedRandom(0x00888888, 0x00FFFFFF);
+
+	EntityManager::GetInstance()->AddEntity(new BallEntity(id, radius, position, velocity, color));
+	NetworkManager::GetInstance()->SendBallAction(id, EActionType::EActionType_SPAWN, radius, position, velocity, color);
+}
+
+void Simulation::UpdateFrame(millisecond deltaTime)
 {
 	// Main Loop
 	if (bIsServer)
@@ -70,6 +78,7 @@ void Simulation::DrawScene()
 	if (!bIsServer)
 	{
 		EntityManager::GetInstance()->Draw();
+		UserInterfaceC::GetInstance()->render();
 	}
 }
 

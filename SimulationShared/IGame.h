@@ -1,7 +1,8 @@
 #pragma once
-#include <chrono>
+//#include <chrono>
 
 #include <windows.h>								// Header File For Windows
+#include "baseTypes.h"
 
 class IGame
 {
@@ -15,7 +16,7 @@ public:
 
 public:
 	virtual void Initialize() = 0;
-	virtual void UpdateFrame(std::chrono::milliseconds deltaTime) = 0;
+	virtual void UpdateFrame(millisecond deltaTime) = 0;
 	virtual void DrawScene() = 0;
 	virtual void Shutdown() = 0;
 

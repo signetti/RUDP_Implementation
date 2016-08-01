@@ -1,7 +1,7 @@
 #include "stdafx.h"
 
-#define BALL_MANAGER_CPP
-
+//#define BALL_MANAGER_CPP
+#define exit __NOT_IN_USE__exit
 #include <assert.h>
 #include <windows.h>											// Header File For Windows
 #include <stdio.h>												// Header File For Standard Input / Output
@@ -15,9 +15,11 @@
 #include "UserInterface.h"
 #include "random.h"
 #include "memory.h"
+#undef exit
 
 UserInterfaceC* UserInterfaceC::sInstance=NULL;
 
+/*
 UserInterfaceC *UserInterfaceC::CreateInstance()
 {
 	assert(sInstance==NULL);
@@ -32,6 +34,28 @@ void UserInterfaceC::render()
 	int age = 100;//BallManagerC::GetInstance()->getOldestBallsAge(&id);
 	drawStringNoRaster("   Oldest Ball(%d) - %d frames",id,age);
 	drawStringNoRaster("   Total Data Buffer Size- %d bytes", 20);//BallManagerC::GetInstance()->getTotalDataBufferSize());
+}
+
+*/
+
+#include "EntityManager.h"
+
+UserInterfaceC *UserInterfaceC::CreateInstance()
+{
+	if (sInstance != nullptr)
+	{
+		throw std::exception("UserInterface Is Not Null!");
+	}
+	sInstance = new UserInterfaceC();
+	return sInstance;
+}
+
+void UserInterfaceC::render()
+{
+	drawString(-1500, -1850, "Num Spawns   = %d", EntityManager::GetInstance()->NumberOfSpawns());
+	drawStringNoRaster("   Num Destroys = %d", EntityManager::GetInstance()->NumberOfDestroys());
+	drawStringNoRaster("   Num Balls = %d (%d)", EntityManager::GetInstance()->NumberOfEntities()
+		, EntityManager::GetInstance()->NumberOfSpawns() - EntityManager::GetInstance()->NumberOfDestroys());
 }
 
 void UserInterfaceC::drawString(int32_t x, int32_t y, char* format, ...)

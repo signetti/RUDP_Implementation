@@ -2,6 +2,7 @@
 #include "IManager.h"
 #include "baseTypes.h"
 #include <memory>
+#include <chrono>
 
 class Socket;
 class IServerSocket;
@@ -31,7 +32,7 @@ public:
 	static NetworkManager* GetInstance() { return sInstance; }
 
 	void Draw() override {}
-	void Update(const std::chrono::milliseconds& deltaTime) override;
+	void Update(const millisecond& deltaTime) override;
 	void Shutdown() override;
 
 	void SendBallAction(id_number id, EActionType actionType, float radius, Coord2D position, Coord2D velocity, uint32_t color);

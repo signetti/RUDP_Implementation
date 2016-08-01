@@ -25,7 +25,7 @@ int main()
 	for (;;)
 	{
 		// Update Frame
-		game->UpdateFrame(elapsedTime);
+		game->UpdateFrame((millisecond)elapsedTime.count());
 
 		// Elapsed Time for Update
 		endTime = std::chrono::high_resolution_clock::now();

@@ -2,7 +2,6 @@
 
 #include "NetworkManager.h"
 #include <exception>
-#include <chrono>
 #include "Socket.h"
 
 #include "EntityManager.h"
@@ -227,7 +226,22 @@ void NetworkManager::SendBallAction(id_number id, EActionType actionType, float 
 		packet_size = builder.GetSize();
 
 		// Send Action Data
-		mSocket->Send(packet_serialized, packet_size);
+		switch (actionType)
+		{
+		case EActionType::EActionType_SPAWN:
+		case EActionType::EActionType_DESTROY:
+			// High Priority! Complete on Success
+			while (mSocket->Send(packet_serialized, packet_size) != true)
+			{	// Sleep for a while
+				Sleep(1);
+			}
+			break;
+		default:
+			// Low Priority! Fire-and-Forget...
+			mSocket->Send(packet_serialized, packet_size);
+			break;
+		}
+
 	//	Logger::PrintF(__FILE__, "Action %s Sent to Ball #%d: rad<%.02f> pos<%.02f,%.02f> vel<%.02f,%.02f>\n"
 	//		, ActionTypeToChar(actionType), id, radius, position.x, position.y, velocity.x, velocity.y);
 	}
@@ -252,14 +266,18 @@ void NetworkManager::SendFieldAction(id_number id, EActionType actionType, uint3
 		packet_size = builder.GetSize();
 
 		// Send Action Data
-		mSocket->Send(packet_serialized, packet_size);
+		// High Priority! Complete on Success
+		while (mSocket->Send(packet_serialized, packet_size) != true)
+		{	// Sleep for a while
+			Sleep(1);
+		}
 
 	//	Logger::PrintF(__FILE__, "Action %s Sent to Field #%d: width<%.02f> height<%.02f>\n"
 	//		, ActionTypeToChar(actionType), id, width, height);
 	}
 }
 
-void NetworkManager::Update(const std::chrono::milliseconds&)
+void NetworkManager::Update(const millisecond&)
 {
 	if (!bIsServer)
 	{

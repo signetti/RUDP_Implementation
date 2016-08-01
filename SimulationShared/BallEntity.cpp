@@ -9,7 +9,7 @@
 #include "action_generated.h"
 
 BallEntity::BallEntity(id_number id, float radius, const Coord2D& initPos, const Coord2D& initVel, uint32_t initColor) : Entity(id)
-	, mRadius(radius), mPosition(initPos), mVelocity(initVel), mBallColor(initColor) {}
+	, mRadius(radius), mPosition(initPos), mVelocity(initVel), mBallColor(initColor), mLifetime(0) {}
 
 BallEntity::~BallEntity() {}
 
@@ -29,16 +29,31 @@ void BallEntity::Draw()
 	DrawCircle(mRadius, mPosition.x, mPosition.y, red, green, blue, false);
 }
 
-void BallEntity::Update(const std::chrono::milliseconds& deltaTime)
+void BallEntity::Update(const millisecond& deltaTime)
 {
-	uint32_t milliseconds = static_cast<uint32_t>(deltaTime.count());
+	uint32_t milliseconds = deltaTime;
+
+	// Clamp the update time
+	if (milliseconds >= 100)
+	{
+		milliseconds = 100;
+	}
 
 	mPosition.x += mVelocity.x * milliseconds / 10;
 	mPosition.y += mVelocity.y * milliseconds / 10;
 
 	CollideField();
 
+	// Update the lifetime
+	mLifetime += milliseconds;
+
+	// Send action across the network
 	NetworkManager::GetInstance()->SendBallAction(mID, EActionType::EActionType_MOVE, mRadius, mPosition, mVelocity, mBallColor);
+}
+
+uint32_t BallEntity::GetLifetime() const
+{
+	return mLifetime;
 }
 
 void BallEntity::Move(uint32_t color, float radius, const Coord2D & position, const Coord2D & velocity)

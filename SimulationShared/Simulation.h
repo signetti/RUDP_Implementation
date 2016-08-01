@@ -19,8 +19,9 @@ protected:
 
 public:
 	void SetAsServer(bool isServer) { bIsServer = isServer; }
+	void CreateRandomBall();
 
-	void UpdateFrame(std::chrono::milliseconds deltaTime) override;
+	void UpdateFrame(millisecond deltaTime) override;
 	void DrawScene() override;
 	void Shutdown() override;
 

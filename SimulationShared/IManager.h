@@ -1,5 +1,5 @@
 #pragma once
-#include <chrono>
+#include "baseTypes.h"
 
 class IManager
 {
@@ -8,6 +8,6 @@ protected:
 
 public:
 	virtual void Draw() = 0;
-	virtual void Update(const std::chrono::milliseconds& deltaTime) = 0;
+	virtual void Update(const millisecond& deltaTime) = 0;
 	virtual void Shutdown() = 0;
 };

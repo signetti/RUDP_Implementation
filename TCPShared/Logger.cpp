@@ -176,7 +176,7 @@ int Logger::PrintErrorF(const std::string& logDescriptor, const char * format, .
 	va_start(args, format);
 
 	// Pass down Function Call
-	int state = PrintF(logDescriptor, BasicColor::RED, format, args);
+	int state = PrintF_Helper(logDescriptor, BasicColor::RED, format, args);
 
 	// Clean Arguments
 	va_end(args);

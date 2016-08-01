@@ -57,7 +57,7 @@ private:	/* Variables */
 	// The remote sequence number from the receiver
 	seq_num_t mRemoteSequenceNumber;
 	// The last message id assigned (synced between the two sides)
-	uint32_t mMessageId;
+	//uint32_t mMessageId;
 
 private:	/* Functions */
 	bool ReceiveValidPacket(uint8_t* buffer, uint32_t bufferSize, seq_num_t minSeq, uint32_t fragmentCount, RPacket& OutPacket);
@@ -65,6 +65,7 @@ private:	/* Functions */
 	bool SendPacket(const RPacket& packet);
 
 	void MoveToNextMessage(uint32_t fragmentCount);
+	void UpdateSequenceNumbers(seq_num_t localSeq, seq_num_t remoteSeq);
 
 public:
 	/**	Construct a RUDP socket with no connection (must call Connect() first) binded to the given local port

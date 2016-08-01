@@ -9,6 +9,7 @@ private:
 	float		mRadius;
 	Coord2D mPosition;
 	Coord2D mVelocity;
+	uint32_t mLifetime;
 
 private:
 	void CollideField();
@@ -22,7 +23,8 @@ public:
 
 public:
 	void Draw() override;
-	void Update(const std::chrono::milliseconds& deltaTime) override;
+	void Update(const millisecond& deltaTime) override;
+	uint32_t GetLifetime() const;
 
 	void Move(uint32_t color, float radius, const Coord2D& position, const Coord2D& velocity);
 };

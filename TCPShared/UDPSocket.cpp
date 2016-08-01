@@ -12,7 +12,7 @@ void UDPSocket::SetBroadcast()
 		(raw_type *)&broadcastPermission, sizeof(broadcastPermission));
 	WSAManager::StoreLastErrorCode();
 
-	Logger::SetLoggerState(__FILE__, true, true, BasicColor::CYAN);
+	Logger::SetLoggerState(__FILE__, false, true, BasicColor::CYAN);
 }
 
 UDPSocket::UDPSocket(uint32_t maxTimeoutMS) : Socket(SOCK_DGRAM, IPPROTO_UDP)
