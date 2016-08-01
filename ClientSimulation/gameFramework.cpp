@@ -375,15 +375,15 @@ int WINAPI WinMain (HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLin
 	// Get window's width, height and bitsPerPixel
 	game->GetScreenData(window.init.width, window.init.height, window.init.bitsPerPixel);
 
-	window.init.isFullScreen	= TRUE;									// Fullscreen? (Set To TRUE)
+	window.init.isFullScreen	= FALSE;									// Fullscreen? (Set To TRUE)
 
 	ZeroMemory (&keys, sizeof (Keys));									// Zero keys Structure
 
-	// Ask The User If They Want To Start In FullScreen Mode?
+	/*/ Ask The User If They Want To Start In FullScreen Mode?
 	if (MessageBox (HWND_DESKTOP, L"Would You Like To Run In Fullscreen Mode?", L"Start FullScreen?", MB_YESNO | MB_ICONQUESTION) == IDNO)
 	{
 		window.init.isFullScreen = FALSE;								// If Not, Run In Windowed Mode
-	}
+	}*/
 
 	// Register A Class For Our Window To Use
 	if (RegisterWindowClass (&application) == FALSE)					// Did Registering A Class Fail?

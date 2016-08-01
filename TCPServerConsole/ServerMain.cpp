@@ -38,7 +38,7 @@ int __cdecl main()
 		switch (config.protocol)
 		{
 		case EProtocol::TCP:
-			server = std::shared_ptr<IServerSocket>(new TCPServerSocket(DEFAULT_SERVER_PORT_NUMBER));
+			server = std::shared_ptr<IServerSocket>(new TCPServerSocket(DEFAULT_SERVER_PORT_NUMBER, config.maxTimeoutMS));
 			break;
 		case EProtocol::UDP:
 			server = std::shared_ptr<IServerSocket>(new UDPServerSocket(DEFAULT_SERVER_PORT_NUMBER, config.maxTimeoutMS));

@@ -39,7 +39,7 @@ void Simulation::Initialize()
 	}
 	else
 	{	// Establish Connection / Initialize Manager
-		NetworkManager::CreateClientInstance(std::chrono::milliseconds(100));
+		NetworkManager::CreateClientInstance(std::chrono::milliseconds(50));
 	}
 }
 

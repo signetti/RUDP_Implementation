@@ -52,10 +52,10 @@ UserInterfaceC *UserInterfaceC::CreateInstance()
 
 void UserInterfaceC::render()
 {
-	drawString(-1500, -1850, "Num Spawns   = %d", EntityManager::GetInstance()->NumberOfSpawns());
-	drawStringNoRaster("   Num Destroys = %d", EntityManager::GetInstance()->NumberOfDestroys());
+	drawString(-1500, -1850, "Num Spawns = %d (%d)", EntityManager::GetInstance()->NumberOfSpawns(), EntityManager::GetInstance()->NumberOfSpawnRequests());
+	drawStringNoRaster("   Num Destroys = %d (%d)", EntityManager::GetInstance()->NumberOfDestroys(), EntityManager::GetInstance()->NumberOfDestroyRequests());
 	drawStringNoRaster("   Num Balls = %d (%d)", EntityManager::GetInstance()->NumberOfEntities()
-		, EntityManager::GetInstance()->NumberOfSpawns() - EntityManager::GetInstance()->NumberOfDestroys());
+		, EntityManager::GetInstance()->NumberOfSpawnRequests() - EntityManager::GetInstance()->NumberOfDestroyRequests());
 }
 
 void UserInterfaceC::drawString(int32_t x, int32_t y, char* format, ...)

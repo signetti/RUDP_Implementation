@@ -13,7 +13,9 @@
 #include "NetworkManager.h"
 #include "Simulation.h"
 
-#define TURN_OFF_SPAWN true
+#include "Logger.h"
+
+#define TURN_OFF_SPAWN false
 
 EntityManager* EntityManager::sInstance = nullptr;
 
@@ -39,6 +41,8 @@ void EntityManager::AddEntity(Entity* entity)
 {
 	if (entity != nullptr)
 	{
+		++mNumberOfSpawnRequests;
+
 		// Insert if it does not exist
 		auto key = entity->ID();
 		auto found = mEntityList.lower_bound(key);
@@ -50,13 +54,14 @@ void EntityManager::AddEntity(Entity* entity)
 		else
 		{
 			delete entity;
-			//throw std::exception("Duplicate Entity being created");
 		}
 	}
 }
 
 bool EntityManager::RemoveEntityByID(id_number id)
 {
+	++mNumberOfDestroyRequests;
+
 	auto found = mEntityList.find(id);
 	bool doesExist = (found != mEntityList.end());
 	if (doesExist)
@@ -121,10 +126,18 @@ void EntityManager::Update(const millisecond& deltaTime)
 		NetworkManager::GetInstance()->SendBallAction(id, EActionType::EActionType_DESTROY, 0, Coord2D(), Coord2D(), 0);
 	}
 
-	if (mEntityList.size() < static_cast<uint32_t>(getRangedRandom(20, 50)))
+	while (mEntityList.size() < 50U)//static_cast<uint32_t>(getRangedRandom(20, 50)))
 	{
 		reinterpret_cast<Simulation*>(Simulation::GetInstance())->CreateRandomBall();
 	}
+
+	system("cls");
+
+	Logger::PrintF(__FILE__, "Num Spawns = %d (%d)", EntityManager::GetInstance()->NumberOfSpawns(), EntityManager::GetInstance()->NumberOfSpawnRequests());
+	Logger::PrintF(__FILE__, "   Num Destroys = %d (%d)", EntityManager::GetInstance()->NumberOfDestroys(), EntityManager::GetInstance()->NumberOfDestroyRequests());
+	Logger::PrintF(__FILE__, "   Num Balls = %d (%d)\n", EntityManager::GetInstance()->NumberOfEntities()
+		, EntityManager::GetInstance()->NumberOfSpawnRequests() - EntityManager::GetInstance()->NumberOfDestroyRequests());
+
 #endif
 }
 

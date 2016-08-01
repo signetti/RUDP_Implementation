@@ -12,6 +12,9 @@ private:
 
 	static EntityManager* sInstance;
 
+	uint32_t mNumberOfSpawnRequests;
+	uint32_t mNumberOfDestroyRequests;
+
 	uint32_t mNumberOfSpawns;
 	uint32_t mNumberOfDestroys;
 
@@ -31,6 +34,8 @@ public:
 	uint32_t NumberOfEntities() const;
 	uint32_t NumberOfSpawns() const		{ return mNumberOfSpawns; }
 	uint32_t NumberOfDestroys() const	{ return mNumberOfDestroys; }
+	uint32_t NumberOfSpawnRequests() const		{ return mNumberOfSpawnRequests; }
+	uint32_t NumberOfDestroyRequests() const	{ return mNumberOfDestroyRequests; }
 
 	void Draw() override;
 	void Update(const millisecond& deltaTime) override;

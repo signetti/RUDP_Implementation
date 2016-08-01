@@ -6,11 +6,21 @@
 /*	C++ class representation for a TCP Socket	*/
 class TCPSocket : public Socket
 {
+private:
+	// 
+	bool FailWaitAll(const void* sourceBuffer, uint32_t size);
+	bool ReturnToWaitAll(void* destBuffer, uint32_t size, uint32_t& outTotalBytesReceived);
+
+protected:
+	// Receive only the respective bytes
+	bool ReceiveWaitAll(void* buffer, uint32_t bufferSize);
+
 public:
 	/**	Construct a TCP socket with no connection (must call Connect() first)
 	*   @exception	SocketException		thrown if unable to create TCP socket
 	*/
-	TCPSocket();
+	TCPSocket(uint32_t maxTimeOutMS);
+	~TCPSocket();
 
 	/**	Establishes a connection between the remote client and this client (connect() equivalent)
 	*	@param	remoteAddress			the remote client's address
@@ -24,20 +34,25 @@ public:
 	*   @param	bufferSize				the size of the buffer given
 	*   @exception SocketException	thrown if unable to send data
 	*/
-	bool Send(const void *buffer, uint32_t bufferSize) override;
+	bool Send(const void* buffer, uint32_t bufferSize) override;
 
 	/**	Receives a message from the remote client and passes it into the buffer (recv() equivalent)
 	*   @param	buffer					the buffer for the received message to be stored
 	*   @param	bufferSize				the size of the buffer given
 	*   @exception SocketException		thrown if unable to send data
 	*/
-	uint32_t Receive(void *buffer, uint32_t bufferSize) override;
+	uint32_t Receive(void* buffer, uint32_t bufferSize) override;
 
 protected:
+	uint32_t mMaxTimeOut;
+	uint8_t* mTempBuffer;
+	uint32_t mTempBufferSize;
+	uint32_t mMessageSizeReceived;
+
 	// Grants access for TCPServerSocket::Accept() connection creation
 	friend class TCPServerSocket;
 	// TCPSocket creation using a socket defined for TCP connection
-	TCPSocket(SOCKET socket);
+	TCPSocket(SOCKET socket, uint32_t maxTimeOutMS);
 };
 
 
@@ -47,6 +62,7 @@ class TCPServerSocket : protected TCPSocket, public IServerSocket
 private:
 	// List of clients accepted by this server
 	std::vector<std::shared_ptr<TCPSocket>> mClients;
+	uint32_t mMaxTimeOut;
 
 public:
 	/**	Construct a TCP Server Socket, listening on the given port.
@@ -54,7 +70,7 @@ public:
 	*   @param		queueLen			the maximum queue length for outstanding connection requests (default 5)
 	*   @exception	SocketException		thrown if unable to create TCP server socket
 	*/
-	explicit TCPServerSocket(uint16_t listenPort, uint32_t queueLen = 5U);
+	explicit TCPServerSocket(uint16_t listenPort, uint32_t maxTimeOutMS, uint32_t queueLen = 5U);
 
 	/**	Blocks until a new connection is established on this socket (or an exception is thrown)
 	*   @return							a new and open TCPSocket instance

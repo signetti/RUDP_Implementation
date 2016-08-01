@@ -20,7 +20,7 @@
 
 NetworkManager* NetworkManager::sInstance = nullptr;
 
-NetworkManager::NetworkManager() : mSocket(nullptr), mTimeDuration(), bIsServer(true) {}
+NetworkManager::NetworkManager() : mSocket(nullptr), mTimeDuration(0U), bIsServer(true) {}
 NetworkManager::NetworkManager(const std::chrono::milliseconds& reservedTime) : mSocket(nullptr), mTimeDuration(reservedTime), bIsServer(false) {}
 
 void NetworkManager::CreateServerInstance()
@@ -70,7 +70,7 @@ void NetworkManager::Initialize()
 		switch (config.protocol)
 		{
 		case EProtocol::TCP:
-			mServer = std::shared_ptr<IServerSocket>(new TCPServerSocket(DEFAULT_SERVER_PORT_NUMBER));
+			mServer = std::shared_ptr<IServerSocket>(new TCPServerSocket(DEFAULT_SERVER_PORT_NUMBER, config.maxTimeoutMS));
 			break;
 		case EProtocol::UDP:
 			mServer = std::shared_ptr<IServerSocket>(new UDPServerSocket(DEFAULT_SERVER_PORT_NUMBER, config.maxTimeoutMS));
@@ -95,7 +95,7 @@ void NetworkManager::Initialize()
 		switch (config.protocol)
 		{
 		case EProtocol::TCP:
-			mSocket = new TCPSocket();
+			mSocket = new TCPSocket(config.maxTimeoutMS);
 			break;
 		case EProtocol::UDP:
 			mSocket = new UDPSocket(DEFAULT_CLIENT_PORT_NUMBER, config.maxTimeoutMS);
